@@ -1,9 +1,10 @@
 SUBDIRS = \
 	Common \
 	DataLayer \
-	Arcs
+	Arcs \
+	bin
 
 dist_doc_DATA = \
 	README.md
-	
+
 EXTRA_DIST = autogen.sh

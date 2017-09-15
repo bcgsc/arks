@@ -69,6 +69,7 @@ AC_CONFIG_FILES([
 		Common/Makefile
 		DataLayer/Makefile
 		Arcs/Makefile
+		bin/Makefile
 ])
 AC_OUTPUT
 
