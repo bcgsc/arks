@@ -2,6 +2,8 @@
 #include <zlib.h>
 #include "kseq.h"
 #include <cassert>
+#include <cctype>
+#include <iostream>
 #include <omp.h>
 
 KSEQ_INIT(gzFile, gzread)
@@ -749,6 +751,18 @@ int bestContig (ARCS::ContigKMap &kmap, std::string readseq, int k, int k_shift,
 	}
 }
 
+/* Strip the trailing "/1" or "/2" from a FASTA ID, if such exists */
+static inline void stripReadNum(std::string& readName)
+{
+	size_t pos = readName.rfind("/");
+	if (pos == std::string::npos)
+		return;
+	if (pos == 0 || pos == readName.length() - 1)
+		return;
+	if (!std::isdigit(readName.at(pos + 1)))
+		return;
+	readName.resize(pos);
+}
 
 /* Read through longranger basic chromium output fastq file */
 void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexMap& imap,
@@ -818,6 +832,8 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 			} else {
 				stop = true;
 			}
+			stripReadNum(read1_name);
+			stripReadNum(read2_name);
 			if (read1_name == read2_name) {
 				paired = true;
 			} else {
