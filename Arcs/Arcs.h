@@ -110,7 +110,10 @@ typedef google::sparse_hash_map<std::string, int, CityHasher<std::string>, eqstr
 typedef std::map<CI, int> ScafMap;
 /* IndexMap: key = index sequence, value = ScafMap */
 typedef std::unordered_map<std::string, ScafMap> IndexMap;
-/* PairMap: key = pair of scaf sequence id, value = num links*/
+/*
+ * PairMap: key = pair of scaf sequence id, value = num links for
+ * HH, HT, TH, TT orientations of pair
+ */
 typedef std::map<std::pair<std::string, std::string>, std::vector<int>> PairMap;
 
 
