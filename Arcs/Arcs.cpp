@@ -1,5 +1,6 @@
 #include "Arcs.h"
 #include "Common/PairHash.h"
+#include "Common/StatUtil.h"
 #include <zlib.h>
 #include "kseq.h"
 #include <cassert>
@@ -52,6 +53,7 @@ static const char USAGE_MESSAGE[] =
 		"			2    output of aligning chromium to draft (IndexMap only)\n"
 		"			3    all checkpoint files (ContigRecord, ContigKmerMap, and IndexMap)\n"
 		"   -c  Minimum number of mapping read pairs/Index required before creating edge in graph. (default: 5)\n"
+		"   -D  Estimate distances between contigs [disabled]"
 		"   -k  k-value for the size of a k-mer. (default: 30) (required)\n"
 		"   -g  shift between k-mers (default: 1)\n"
 		"   -j  Minimum Jaccard Index for a read to be associated with a contigId. (default: 0.55)\n"
@@ -69,7 +71,7 @@ static const char USAGE_MESSAGE[] =
 
 ARCS::ArcsParams params;
 
-static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:";
+static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:D";
 
 enum { OPT_HELP = 1, OPT_VERSION};
 
@@ -525,8 +527,8 @@ int mapKmers(std::string seqToKmerize, int k, int k_shift,
  *	int k							k-value (specified by user)
  */
 void getContigKmers(std::string contigfile, ARCS::ContigKMap &kmap,
-		std::vector<ARCS::CI> &contigRecord) {
-
+	std::vector<ARCS::CI> &contigRecord, ARCS::ContigToLength& contigToLength)
+{
 	int totalNumContigs = 0;
 	int skippedContigs = 0;
 	int validContigs = 0;
@@ -589,6 +591,8 @@ void getContigKmers(std::string contigfile, ARCS::ContigKMap &kmap,
 				// If not will ignore the contig
 				int sequence_length = sequence.length();
 
+				// record contig length for later use (distance estimation)
+				contigToLength[contigID] = sequence_length;
 
 				// If contig length is less than 2 x end_length, then we split the sequence
 				// in half to decide head/tail (aka we changed the end_length)
@@ -986,6 +990,120 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
 	}
 }
 
+/**
+ * Calculate stats regarding number of shared barcodes
+ * vs. distance.  These stats are based on examining
+ * the number of shared barcodes between the ends of
+ * the same contig.
+ */
+void calcBarcodeToDistStats(const ARCS::IndexMap& imap,
+	const ARCS::ContigToLength& contigToLength,
+	const std::unordered_map<std::string, int>& indexMultMap,
+	ARCS::BarcodeToDistStats& barcodeToDistStats)
+{
+	typedef std::string ContigID;
+	typedef std::unordered_map<ContigID, unsigned> ContigToNumBarcodes;
+	typedef typename ContigToNumBarcodes::const_iterator ContigToNumBarcodesIt;
+
+	/* contig ID => number of barcodes shared between head and tail */
+	ContigToNumBarcodes numSharedBarcodes;
+
+	/* tally number of barcodes shared between heads/tails of same contig */
+
+	/* for each chromium barcode */
+	for (auto it = imap.begin(); it != imap.end(); ++it) {
+
+		/* skip barcodes outside of min/max multiplicity range */
+		std::string index = it->first;
+		int indexMult = indexMultMap.at(index);
+		if (indexMult < params.min_mult || indexMult > params.max_mult)
+			continue;
+
+		/* contig head/tail => number of read pairs from current barcode */
+		const ARCS::ScafMap& contigEndToPairs = it->second;
+
+		for (auto o = contigEndToPairs.begin();
+			 o != contigEndToPairs.end(); ++o) {
+
+			for (auto p = contigEndToPairs.begin();
+				 p != contigEndToPairs.end(); ++p) {
+
+				std::string scafA, scafB;
+				bool scafAflag, scafBflag;
+				std::tie(scafA, scafAflag) = o->first;
+				std::tie(scafB, scafBflag) = p->first;
+
+				/*
+				 * skip over pairs that are not head and
+				 * tail of same contig
+				 */
+				if (scafA != scafB || scafAflag || !scafBflag)
+					continue;
+
+				std::string contigID = scafA;
+
+                ARCS::ContigToLengthIt lengthIt = contigToLength.find(contigID);
+				assert(lengthIt != contigToLength.end());
+				unsigned l = lengthIt->second;
+
+				/*
+				 * skip contigs shorter than 2 times the contig
+				 * end length, because we want our distance samples
+				 * to be based on a uniform head/tail length
+				 */
+				if ((int)l < 2 * params.end_length)
+					continue;
+
+				numSharedBarcodes[contigID]++;
+			}
+		}
+	}
+
+	/* build map of num shared barcodes => distance between head/tail */
+
+	ARCS::BarcodeToDist barcodeToDist;
+
+	for (ContigToNumBarcodesIt it = numSharedBarcodes.begin();
+		 it != numSharedBarcodes.end(); ++it)
+	{
+		std::string contigID = it->first;
+        unsigned numBarcodes = it->second;
+
+		assert(numBarcodes > 0);
+		ARCS::BarcodesBinIndex binIndex =
+			(numBarcodes - 1) / params.barcodes_bin_size;
+
+		/* get length of contig */
+
+        ARCS::ContigToLengthIt lengthIt = contigToLength.find(contigID);
+		assert(lengthIt != contigToLength.end());
+		unsigned l = lengthIt->second;
+		assert((int)l >= 2 * params.end_length);
+
+		/* record distance sample */
+
+	    unsigned d = l - 2 * params.end_length;
+		barcodeToDist[binIndex].push_back(d);
+	}
+
+	/* calc distance median and IQR for each barcode bin */
+
+	for (ARCS::BarcodeToDistIt it = barcodeToDist.begin();
+		it != barcodeToDist.end(); ++it)
+	{
+		unsigned binIndex = it->first;
+		ARCS::DistanceSamples& distSamples = it->second;
+
+		ARCS::DistStats stats;
+ 		stats.q2 = median(distSamples.begin(), distSamples.end());
+		boost::tie(stats.q1, stats.q3) =
+			IQR(distSamples.begin(), distSamples.end());
+		stats.n = distSamples.size();
+
+		barcodeToDistStats[binIndex] = stats;
+	}
+}
+
 /*
  * Iterate through IndexMap and for every pair of scaffolds
  * that align to the same index, store in PairMap. PairMap
@@ -1123,8 +1241,9 @@ static inline bool checkSignificance(int max, int second) {
  * between the scafNames.
  * VidVdes is a mapping of vertex descriptors to scafNames (vertex id).
  */
-void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g) {
-
+void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g,
+	const ARCS::BarcodeToDistStats& barcodeToDistStats)
+{
 	ARCS::VidVdesMap vmap;
 
 	ARCS::PairMap::const_iterator it;
@@ -1168,6 +1287,24 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g) {
 			if (inserted) {
 				g[e].weight = max;
 				g[e].orientation = index;
+
+				/* if -d (estimate distances) option was used */
+				if (!barcodeToDistStats.empty())
+				{
+					assert(max > 0);
+					ARCS::BarcodesBinIndex binIndex =
+						(max - 1) / params.barcodes_bin_size;
+
+					ARCS::BarcodeToDistStatsConstIt statsIt =
+						barcodeToDistStats.find(binIndex);
+					if (statsIt != barcodeToDistStats.end()) {
+						const ARCS::DistStats& distStats = statsIt->second;
+						g[e].q1 = distStats.q1;
+						g[e].q2 = distStats.q2;
+						g[e].q3 = distStats.q3;
+						g[e].n = distStats.n;
+					}
+				}
 			}
 		}
 	}
@@ -1176,18 +1313,16 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g) {
 /*
  * Write out the boost graph in a .dot file.
  */
-void writeGraph(const std::string& graphFile_dot, ARCS::Graph& g) {
+void writeGraph(const std::string& graphFile_dot, ARCS::Graph& g)
+{
 	std::ofstream out(graphFile_dot.c_str());
 	assert(out);
 
-	boost::dynamic_properties dp;
-	dp.property("id", get(&ARCS::VertexProperties::id, g));
-	dp.property("weight", get(&ARCS::EdgeProperties::weight, g));
-	dp.property("label", get(&ARCS::EdgeProperties::orientation, g));
-	dp.property("node_id", get(boost::vertex_index, g));
-	boost::write_graphviz_dp(out, g, dp);
-	assert(out);
+	ARCS::VertexPropertyWriter<ARCS::Graph> vpWriter(g);
+	ARCS::EdgePropertyWriter<ARCS::Graph> epWriter(g);
 
+	boost::write_graphviz(out, g, vpWriter, epWriter);
+	assert(out);
 	out.close();
 }
 
@@ -1270,6 +1405,9 @@ void runArcs(vector<string> inputFiles) {
     ARCS::Graph g;
     std::unordered_map<std::string, int> indexMultMap;
 
+    ARCS::ContigToLength contigToLength;
+    ARCS::BarcodeToDistStats barcodeToDistStats;
+
     std::time_t rawtime;
 
     std::cout << "\n---We are using KMER method.---\n" << std::endl;
@@ -1289,7 +1427,7 @@ void runArcs(vector<string> inputFiles) {
 
     	time(&rawtime);
     	std::cout << "\n=>Storing Kmers from Contig ends... " << ctime(&rawtime) << std::endl;
-    	getContigKmers(params.file, kmap, contigRecord);
+    	getContigKmers(params.file, kmap, contigRecord, contigToLength);
     }
 
     if (full || alignc) {
@@ -1322,13 +1460,20 @@ void runArcs(vector<string> inputFiles) {
 	createIndexMap(params.imapfile, imap);
     }
 
-    time(&rawtime);
+	if (params.distance_est) {
+		time(&rawtime);
+		std::cout << "\n=>Calculating barcode => distance stats... " << ctime(&rawtime);
+		calcBarcodeToDistStats(imap, contigToLength, indexMultMap,
+			barcodeToDistStats);
+	}
+
+	time(&rawtime);
     std::cout << "\n=>Starting pairing of scaffolds... " << ctime(&rawtime);
     pairContigs(imap, pmap, indexMultMap);
 
     time(&rawtime);
     std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
-    createGraph(pmap, g);
+    createGraph(pmap, g, barcodeToDistStats);
 
     time(&rawtime);
     std::cout << "\n=>Starting to write graph file... " << ctime(&rawtime) << std::endl;
@@ -1438,6 +1583,9 @@ int main(int argc, char** argv) {
 			break;
 		case 't':
 			arg >> params.threads;
+			break;
+		case 'D':
+			params.distance_est = true;
 			break;
 		case OPT_HELP:
 			std::cout << USAGE_MESSAGE;

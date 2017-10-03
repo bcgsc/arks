@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <sstream>
+#include <limits>
 #include <utility> 
 #include <vector>
 #include <iterator>
@@ -56,12 +57,14 @@ struct ArcsParams {
 	float error_percent;
 	int verbose;
 	unsigned threads;
+	unsigned barcodes_bin_size;
+	bool distance_est;
 
 	ArcsParams() :
 			program(), file(), multfile(), conrecfile(), kmapfile(), imapfile(), checkpoint_outs(0), min_reads(5), k_value(
 					30), k_shift(1), j_index(0.55), min_links(0), min_size(500), base_name(
 					""), min_mult(50), max_mult(10000), max_degree(0), end_length(
-					0), error_percent(0.05), verbose(0), threads(1) {
+					0), error_percent(0.05), verbose(0), threads(1), barcodes_bin_size(25), distance_est(false) {
 	}
 
 };
@@ -110,6 +113,36 @@ typedef std::unordered_map<std::string, ScafMap> IndexMap;
 /* PairMap: key = pair of scaf sequence id, value = num links*/
 typedef std::map<std::pair<std::string, std::string>, std::vector<int>> PairMap;
 
+
+/** maps contig FASTA ID to contig length (bp) */
+typedef std::unordered_map<std::string, int> ContigToLength;
+typedef typename ContigToLength::const_iterator ContigToLengthIt;
+
+typedef unsigned BarcodesBinIndex;
+typedef std::vector<unsigned> DistanceSamples;
+/**
+ * Maps number of shared barcodes to distance samples. These distance
+ * samples are obtained by comparing head/tail regions of the same contig.
+ */
+typedef std::unordered_map<BarcodesBinIndex, DistanceSamples> BarcodeToDist;
+typedef typename BarcodeToDist::iterator BarcodeToDistIt;
+
+struct DistStats
+{
+	/** first quartile for distance samples */
+	float q1;
+	/** second quartile for distance samples (i.e. the median) */
+	float q2;
+	/** third quartile for distance samples */
+	float q3;
+	/** number of distance samples */
+	unsigned n;
+};
+
+typedef std::unordered_map<BarcodesBinIndex, DistStats> BarcodeToDistStats;
+typedef typename BarcodeToDistStats::iterator BarcodeToDistStatsIt;
+typedef typename BarcodeToDistStats::const_iterator BarcodeToDistStatsConstIt;
+
 /* GRAPH DATA STRUCTURES: */
 
 struct VertexProperties {
@@ -120,8 +153,61 @@ struct VertexProperties {
 struct EdgeProperties {
 	int orientation;
 	int weight;
+	float q1;
+	float q2;
+	float q3;
+	unsigned n;
 	EdgeProperties() :
-			orientation(0), weight(0) {
+		orientation(0), weight(0),
+		q1(std::numeric_limits<unsigned>::max()),
+		q2(std::numeric_limits<unsigned>::max()),
+		q3(std::numeric_limits<unsigned>::max()),
+		n(0)
+	{}
+};
+
+template <class GraphT>
+struct EdgePropertyWriter
+{
+	typedef typename boost::graph_traits<GraphT>::edge_descriptor E;
+	typedef typename boost::edge_property<GraphT>::type EP;
+
+	GraphT& m_g;
+
+	EdgePropertyWriter(GraphT& g) : m_g(g) {}
+
+	void operator()(std::ostream& out, const E& e) const
+	{
+		EP ep = m_g[e];
+		out << '['
+			<< "label=" << ep.orientation << ','
+			<< "weight=" << ep.weight;
+
+		if (ep.q1 != std::numeric_limits<unsigned>::max()) {
+			assert(ep.q2 != std::numeric_limits<unsigned>::max());
+			assert(ep.q3 != std::numeric_limits<unsigned>::max());
+			out << ','
+				<< "q1=" << int(round(ep.q1)) << ','
+				<< "q2=" << int(round(ep.q2)) << ','
+				<< "q3=" << int(round(ep.q3)) << ','
+				<< "n=" << ep.n;
+		}
+		out << ']';
+	}
+};
+
+template <class GraphT>
+struct VertexPropertyWriter
+{
+	typedef typename boost::graph_traits<GraphT>::vertex_descriptor V;
+	typedef typename boost::vertex_property<GraphT>::type VP;
+
+	GraphT& m_g;
+
+	VertexPropertyWriter(GraphT& g) : m_g(g) {}
+	void operator()(std::ostream& out, const V& v) const
+	{
+		out << "[id=" << m_g[v].id << "]";
 	}
 };
 
