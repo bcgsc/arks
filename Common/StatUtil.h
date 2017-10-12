@@ -1,5 +1,5 @@
 #ifndef _STAT_UTIL_H_
-#define _STAT_UTILS_H_ 1
+#define _STAT_UTIL_H_ 1
 
 #include <algorithm>
 
