@@ -46,6 +46,11 @@ static const char USAGE_MESSAGE[] =
 		"			**Note that you are using ARKS as a graphing application**\n"
 		"		-i  tsv file for the IndexMap.\n"
 		"			--> Format of file should be: <barcode> <contig name> <H/T> <count>\n"
+		"   => DISTANCE ESTIMATION OPTIONS:\n"
+		"       -D  enable distance estimation [disabled]"
+		"       -s  output TSV of raw distance vs. shared barcodes samples [disabled]\n"
+		"       -S  output TSV of distance vs. shared barcodes stats [disabled]\n"
+		"       -B  bin size for number of shared barcodes (distance estimation) [25]\n"
 		"	=> EXTRA OUTPUT OPTIONS: <= \n"
 		"		-o   can be one of: \n"
 		"			0    no checkpoint files (default)\n"
@@ -53,7 +58,6 @@ static const char USAGE_MESSAGE[] =
 		"			2    output of aligning chromium to draft (IndexMap only)\n"
 		"			3    all checkpoint files (ContigRecord, ContigKmerMap, and IndexMap)\n"
 		"   -c  Minimum number of mapping read pairs/Index required before creating edge in graph. (default: 5)\n"
-		"   -D  Estimate distances between contigs [disabled]"
 		"   -k  k-value for the size of a k-mer. (default: 30) (required)\n"
 		"   -g  shift between k-mers (default: 1)\n"
 		"   -j  Minimum Jaccard Index for a read to be associated with a contigId. (default: 0.55)\n"
@@ -71,7 +75,7 @@ static const char USAGE_MESSAGE[] =
 
 ARCS::ArcsParams params;
 
-static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:D";
+static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:S:B:";
 
 enum { OPT_HELP = 1, OPT_VERSION};
 
@@ -1037,7 +1041,7 @@ void calcBarcodeToDistStats(const ARCS::IndexMap& imap,
 				 * skip over pairs that are not head and
 				 * tail of same contig
 				 */
-				if (scafA != scafB || scafAflag || !scafBflag)
+				if (scafA != scafB || scafAflag == scafBflag)
 					continue;
 
 				std::string contigID = scafA;
@@ -1060,6 +1064,16 @@ void calcBarcodeToDistStats(const ARCS::IndexMap& imap,
 	}
 
 	/* build map of num shared barcodes => distance between head/tail */
+
+	ofstream samplesOut;
+	if (!params.dist_samples_tsv.empty()) {
+		samplesOut.open(params.dist_samples_tsv.c_str());
+		assert(samplesOut);
+		samplesOut << "contig_id" << '\t'
+			<< "shared_barcodes" << '\t'
+			<< "distance" << '\n';
+		assert(samplesOut);
+	}
 
 	ARCS::BarcodeToDist barcodeToDist;
 
@@ -1084,9 +1098,32 @@ void calcBarcodeToDistStats(const ARCS::IndexMap& imap,
 
 	    unsigned d = l - 2 * params.end_length;
 		barcodeToDist[binIndex].push_back(d);
+
+		if (!params.dist_stats_tsv.empty()) {
+			samplesOut << contigID << '\t'
+				<< numBarcodes << '\t'
+				<< d << '\n';
+			assert(samplesOut);
+		}
+	}
+
+	if (!params.dist_samples_tsv.empty()) {
+		samplesOut.close();
 	}
 
 	/* calc distance median and IQR for each barcode bin */
+
+	ofstream statsOut;
+	if (!params.dist_stats_tsv.empty()) {
+		statsOut.open(params.dist_stats_tsv.c_str());
+		assert(statsOut);
+		statsOut << "barcodes" << '\t'
+			<< "q1" << '\t'
+			<< "q2" << '\t'
+			<< "q3" << '\t'
+			<< "n" << '\n';
+		assert(statsOut);
+	}
 
 	for (ARCS::BarcodeToDistIt it = barcodeToDist.begin();
 		it != barcodeToDist.end(); ++it)
@@ -1101,6 +1138,23 @@ void calcBarcodeToDistStats(const ARCS::IndexMap& imap,
 		stats.n = distSamples.size();
 
 		barcodeToDistStats[binIndex] = stats;
+
+		if (!params.dist_stats_tsv.empty()) {
+			statsOut << '['
+				<< binIndex * params.barcodes_bin_size + 1
+				<< ','
+				<< (binIndex + 1) * params.barcodes_bin_size
+				<< ']' << '\t'
+				<< stats.q1 << '\t'
+				<< stats.q2 << '\t'
+				<< stats.q3 << '\t'
+				<< stats.n << '\n';
+			assert(statsOut);
+		}
+	}
+
+	if (!params.dist_stats_tsv.empty()) {
+		statsOut.close();
 	}
 }
 
@@ -1586,6 +1640,15 @@ int main(int argc, char** argv) {
 			break;
 		case 'D':
 			params.distance_est = true;
+			break;
+		case 's':
+			arg >> params.dist_samples_tsv;
+			break;
+		case 'S':
+			arg >> params.dist_stats_tsv;
+			break;
+		case 'B':
+			arg >> params.barcodes_bin_size;
 			break;
 		case OPT_HELP:
 			std::cout << USAGE_MESSAGE;
