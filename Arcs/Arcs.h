@@ -110,6 +110,8 @@ typedef google::sparse_hash_map<std::string, int, CityHasher<std::string>, eqstr
 
 /* ScafMap: <pair(scaffold id, bool), count>, cout =  # times index maps to scaffold (c), bool = true-head, false-tail*/
 typedef std::map<CI, int> ScafMap;
+typedef typename ScafMap::const_iterator ScafMapConstIt;
+
 /* IndexMap: key = index sequence, value = ScafMap */
 typedef std::unordered_map<std::string, ScafMap> IndexMap;
 /*
@@ -122,31 +124,6 @@ typedef std::map<std::pair<std::string, std::string>, std::vector<int>> PairMap;
 /** maps contig FASTA ID to contig length (bp) */
 typedef std::unordered_map<std::string, int> ContigToLength;
 typedef typename ContigToLength::const_iterator ContigToLengthIt;
-
-typedef unsigned BarcodesBinIndex;
-typedef std::vector<unsigned> DistanceSamples;
-/**
- * Maps number of shared barcodes to distance samples. These distance
- * samples are obtained by comparing head/tail regions of the same contig.
- */
-typedef std::unordered_map<BarcodesBinIndex, DistanceSamples> BarcodeToDist;
-typedef typename BarcodeToDist::iterator BarcodeToDistIt;
-
-struct DistStats
-{
-	/** first quartile for distance samples */
-	float q1;
-	/** second quartile for distance samples (i.e. the median) */
-	float q2;
-	/** third quartile for distance samples */
-	float q3;
-	/** number of distance samples */
-	unsigned n;
-};
-
-typedef std::unordered_map<BarcodesBinIndex, DistStats> BarcodeToDistStats;
-typedef typename BarcodeToDistStats::iterator BarcodeToDistStatsIt;
-typedef typename BarcodeToDistStats::const_iterator BarcodeToDistStatsConstIt;
 
 /* GRAPH DATA STRUCTURES: */
 

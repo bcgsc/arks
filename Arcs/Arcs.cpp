@@ -1132,8 +1132,7 @@ static inline bool checkSignificance(int max, int second) {
  * between the scafNames.
  * VidVdes is a mapping of vertex descriptors to scafNames (vertex id).
  */
-void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g,
-	const ARCS::BarcodeToDistStats& barcodeToDistStats)
+void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 {
 	ARCS::VidVdesMap vmap;
 
@@ -1178,24 +1177,6 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g,
 			if (inserted) {
 				g[e].weight = max;
 				g[e].orientation = index;
-
-				/* if -d (estimate distances) option was used */
-				if (!barcodeToDistStats.empty())
-				{
-					assert(max > 0);
-					ARCS::BarcodesBinIndex binIndex =
-						(max - 1) / params.barcodes_bin_size;
-
-					ARCS::BarcodeToDistStatsConstIt statsIt =
-						barcodeToDistStats.find(binIndex);
-					if (statsIt != barcodeToDistStats.end()) {
-						const ARCS::DistStats& distStats = statsIt->second;
-						g[e].q1 = distStats.q1;
-						g[e].q2 = distStats.q2;
-						g[e].q3 = distStats.q3;
-						g[e].n = distStats.n;
-					}
-				}
 			}
 		}
 	}
@@ -1297,7 +1278,7 @@ void runArcs(vector<string> inputFiles) {
     std::unordered_map<std::string, int> indexMultMap;
 
     ARCS::ContigToLength contigToLength;
-    ARCS::BarcodeToDistStats barcodeToDistStats;
+    DistSampleMap distSamples;
 
     std::time_t rawtime;
 
@@ -1352,10 +1333,19 @@ void runArcs(vector<string> inputFiles) {
     }
 
 	if (params.distance_est) {
+
 		time(&rawtime);
-		std::cout << "\n=>Calculating barcode => distance stats... " << ctime(&rawtime);
-		calcBarcodeToDistStats(imap, contigToLength, indexMultMap,
-			barcodeToDistStats, params);
+		std::cout << "\n=>Calculating distance => barcode samples... " << ctime(&rawtime);
+		calcDistSamples(imap, contigToLength, indexMultMap, params,
+			distSamples);
+
+		if (!params.dist_samples_tsv.empty()) {
+			ofstream samplesOut;
+			samplesOut.open(params.dist_samples_tsv.c_str());
+			assert(samplesOut);
+			writeDistSamples(samplesOut, distSamples);
+			assert(samplesOut);
+		}
 	}
 
 	time(&rawtime);
@@ -1364,7 +1354,7 @@ void runArcs(vector<string> inputFiles) {
 
     time(&rawtime);
     std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
-    createGraph(pmap, g, barcodeToDistStats);
+    createGraph(pmap, g);
 
     time(&rawtime);
     std::cout << "\n=>Starting to write graph file... " << ctime(&rawtime) << std::endl;
