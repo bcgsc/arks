@@ -31,6 +31,9 @@ struct DistSample
 typedef std::unordered_map<std::string, DistSample> DistSampleMap;
 typedef typename DistSampleMap::const_iterator DistSampleConstIt;
 
+typedef std::map<double, DistSample> JaccardToDistSample;
+typedef typename JaccardToDistSample::const_iterator JaccardToDistSampleConstIt;
+
 /**
  * Measure distance between contig ends vs.
  * barcode intersection size and barcode union size.
@@ -108,6 +111,28 @@ void calcDistSamples(const ARCS::IndexMap& imap,
 				distSample.barcodesUnion++;
 			}
 		}
+	}
+}
+
+/**
+ * Build a ordered map from barcode Jaccard index to
+ * distance sample. Each distance sample comes from
+ * measuring the distance between the head/tail of the
+ * same contig, along with associated head/tail barcode
+ * counts.
+ */
+static inline void buildJaccardToDistSamples(
+	const DistSampleMap& distSamples,
+	JaccardToDistSample& jaccardToSamples)
+{
+	for (DistSampleConstIt it = distSamples.begin();
+		it != distSamples.end(); ++it)
+	{
+		const DistSample& sample = it->second;
+		double jaccard = double(sample.barcodesIntersect)
+			/ sample.barcodesUnion;
+		jaccardToSamples.insert(
+			JaccardToDistSample::value_type(jaccard, sample));
 	}
 }
 
