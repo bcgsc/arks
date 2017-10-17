@@ -49,9 +49,8 @@ static const char USAGE_MESSAGE[] =
 		"			--> Format of file should be: <barcode> <contig name> <H/T> <count>\n"
 		"   => DISTANCE ESTIMATION OPTIONS:\n"
 		"       -D  enable distance estimation [disabled]"
-		"       -s  output TSV of raw distance vs. shared barcodes samples [disabled]\n"
-		"       -S  output TSV of distance vs. shared barcodes stats [disabled]\n"
-		"       -B  bin size for number of shared barcodes (distance estimation) [25]\n"
+		"       -s  output TSV of intra-contig distance/barcode data [disabled]\n"
+		"       -B  bin size for number of shared barcodes [20]\n"
 		"	=> EXTRA OUTPUT OPTIONS: <= \n"
 		"		-o   can be one of: \n"
 		"			0    no checkpoint files (default)\n"
@@ -76,7 +75,7 @@ static const char USAGE_MESSAGE[] =
 
 ARCS::ArcsParams params;
 
-static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:S:B:";
+static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:B:";
 
 enum { OPT_HELP = 1, OPT_VERSION};
 
@@ -1470,9 +1469,6 @@ int main(int argc, char** argv) {
 			break;
 		case 's':
 			arg >> params.dist_samples_tsv;
-			break;
-		case 'S':
-			arg >> params.dist_stats_tsv;
 			break;
 		case 'B':
 			arg >> params.barcodes_bin_size;

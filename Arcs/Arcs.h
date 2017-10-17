@@ -66,7 +66,7 @@ struct ArcsParams {
 			program(), file(), multfile(), conrecfile(), kmapfile(), imapfile(), checkpoint_outs(0), min_reads(5), k_value(
 					30), k_shift(1), j_index(0.55), min_links(0), min_size(500), base_name(
 					""), min_mult(50), max_mult(10000), max_degree(0), end_length(
-					0), error_percent(0.05), verbose(0), threads(1), distance_est(false), barcodes_bin_size(25) {
+					0), error_percent(0.05), verbose(0), threads(1), distance_est(false), barcodes_bin_size(20) {
 	}
 
 };
