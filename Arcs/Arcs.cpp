@@ -993,71 +993,70 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
 void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		std::unordered_map<std::string, int>& indexMultMap) {
 
-	/* Iterate through each index in IndexMap */
+	/* for each Chromium barcode */
 	for (auto it = imap.begin(); it != imap.end(); ++it) {
 
-		/* Get index multiplicity from indexMultMap */
+		/* skip barcodes outside of min/max multiplicity range (`-m` opt) */
 		std::string index = it->first;
 		int indexMult = indexMultMap[index];
+		if (indexMult < params.min_mult || indexMult > params.max_mult)
+			continue;
 
-		if (indexMult >= params.min_mult && indexMult <= params.max_mult) {
+		/* Iterate through all the scafNames in ScafMap */
+		for (auto o = it->second.begin(); o != it->second.end(); ++o) {
+			for (auto p = it->second.begin(); p != it->second.end(); ++p) {
+				std::string scafA, scafB;
+				bool scafAflag, scafBflag;
+				std::tie(scafA, scafAflag) = o->first;
+				std::tie(scafB, scafBflag) = p->first;
 
-			/* Iterate through all the scafNames in ScafMap */
-			for (auto o = it->second.begin(); o != it->second.end(); ++o) {
-				for (auto p = it->second.begin(); p != it->second.end(); ++p) {
-					std::string scafA, scafB;
-					bool scafAflag, scafBflag;
-					std::tie(scafA, scafAflag) = o->first;
-					std::tie(scafB, scafBflag) = p->first;
+				/* skip self-pairs */
+				if (scafA == scafB)
+					continue;
 
-					/* Only insert into pmap if scafA < scafB to avoid duplicates */
-					if (scafA != scafB) {
-						bool validA, validB, scafAhead, scafBhead;
+				bool validA, validB, scafAhead, scafBhead;
 
-						std::tie(validA, scafAhead) = headOrTail(
-								it->second[std::pair<std::string, bool>(scafA,
-										true)],
-								it->second[std::pair<std::string, bool>(scafA,
-										false)]);
-						std::tie(validB, scafBhead) = headOrTail(
-								it->second[std::pair<std::string, bool>(scafB,
-										true)],
-								it->second[std::pair<std::string, bool>(scafB,
-										false)]);
+				std::tie(validA, scafAhead) = headOrTail(
+					it->second[std::pair<std::string, bool>(scafA, true)],
+					it->second[std::pair<std::string, bool>(scafA, false)]);
+				std::tie(validB, scafBhead) = headOrTail(
+					it->second[std::pair<std::string, bool>(scafB, true)],
+					it->second[std::pair<std::string, bool>(scafB, false)]);
 
-						if (validA && validB) {
-							std::pair<std::string, std::string> pair(scafA,
-									scafB);
-							std::pair<std::string, std::string> reversepair(
-									scafB, scafA);
+				/*
+				 * if number of read pairs mappings to head/tail are too
+				 * similar to safely choose an orientation
+				 */
+				if (!validA || !validB)
+					continue;
 
-							if (pmap.count(reversepair) != 0) {
-								pair = reversepair;
-								bool temp = scafAhead;
-								scafAhead = scafBhead;
-								scafBhead = temp;
-							}
+				std::pair<std::string, std::string> pair(scafA, scafB);
+				std::pair<std::string, std::string> reversepair(scafB, scafA);
 
-							if (pmap.count(pair) == 0) {
-								std::vector<int> init(4, 0);
-								pmap[pair] = init;
-							}
+				if (pmap.count(reversepair) != 0) {
+					pair = reversepair;
+					bool temp = scafAhead;
+					scafAhead = scafBhead;
+					scafBhead = temp;
+				}
 
-							// Head - Head
-							if (scafAhead && scafBhead) {
-								pmap[pair][0]++;
-								// Head - Tail
-							} else if (scafAhead && !scafBhead) {
-								pmap[pair][1]++;
-								// Tail - Head
-							} else if (!scafAhead && scafBhead) {
-								pmap[pair][2]++;
-								// Tail - Tail
-							} else if (!scafAhead && !scafBhead) {
-								pmap[pair][3]++;
-							}
-						}
-					}
+				if (pmap.count(pair) == 0) {
+					std::vector<int> init(4, 0);
+					pmap[pair] = init;
+				}
+
+				// Head - Head
+				if (scafAhead && scafBhead) {
+					pmap[pair][0]++;
+				// Head - Tail
+				} else if (scafAhead && !scafBhead) {
+					pmap[pair][1]++;
+				// Tail - Head
+				} else if (!scafAhead && scafBhead) {
+					pmap[pair][2]++;
+				// Tail - Tail
+				} else if (!scafAhead && !scafBhead) {
+					pmap[pair][3]++;
 				}
 			}
 		}
