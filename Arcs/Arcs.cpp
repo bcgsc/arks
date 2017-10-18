@@ -1,10 +1,13 @@
 #include "Arcs.h"
+#include "Common/PairHash.h"
 #include <zlib.h>
 #include "kseq.h"
 #include <cassert>
 #include <cctype>
 #include <iostream>
 #include <omp.h>
+#include <string>
+#include <unordered_set>
 
 KSEQ_INIT(gzFile, gzread)
 
@@ -983,7 +986,6 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
 	}
 }
 
-
 /*
  * Iterate through IndexMap and for every pair of scaffolds
  * that align to the same index, store in PairMap. PairMap
@@ -992,6 +994,8 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
  */
 void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		std::unordered_map<std::string, int>& indexMultMap) {
+
+	typedef std::pair<std::string, std::string> ContigPair;
 
 	/* for each Chromium barcode */
 	for (auto it = imap.begin(); it != imap.end(); ++it) {
@@ -1002,9 +1006,16 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		if (indexMult < params.min_mult || indexMult > params.max_mult)
 			continue;
 
+		/*
+		 * prevents counting the same contig pair multiple times
+		 * for the same barcode
+		 */
+		std::unordered_set<ContigPair, PairHash> visitedPairs;
+
 		/* Iterate through all the scafNames in ScafMap */
 		for (auto o = it->second.begin(); o != it->second.end(); ++o) {
 			for (auto p = it->second.begin(); p != it->second.end(); ++p) {
+
 				std::string scafA, scafB;
 				bool scafAflag, scafBflag;
 				std::tie(scafA, scafAflag) = o->first;
@@ -1013,6 +1024,27 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 				/* skip self-pairs */
 				if (scafA == scafB)
 					continue;
+
+				/* use canonical orientation to avoid double-counting pairs */
+				if (scafA > scafB) {
+					std::swap(scafA, scafB);
+					std::swap(scafAflag, scafBflag);
+				}
+
+				/*
+				 * Avoid counting the same pairs multiple times.
+				 * This can happen if a barcode maps to both
+				 * the head and tail regions of a contig.
+				 */
+				ContigPair pair(scafA, scafB);
+				if (visitedPairs.find(pair) != visitedPairs.end())
+					continue;
+				visitedPairs.insert(pair);
+
+				/*
+				 * compare number of reads pairs mapping to head
+				 * and tail regions to determine probable orientation
+				 */
 
 				bool validA, validB, scafAhead, scafBhead;
 
@@ -1024,21 +1056,11 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 					it->second[std::pair<std::string, bool>(scafB, false)]);
 
 				/*
-				 * if number of read pairs mappings to head/tail are too
-				 * similar to safely choose an orientation
+				 * if orientation of one/both contigs can not be
+				 * determined with sufficient confidence (`-r` option)
 				 */
 				if (!validA || !validB)
 					continue;
-
-				std::pair<std::string, std::string> pair(scafA, scafB);
-				std::pair<std::string, std::string> reversepair(scafB, scafA);
-
-				if (pmap.count(reversepair) != 0) {
-					pair = reversepair;
-					bool temp = scafAhead;
-					scafAhead = scafBhead;
-					scafBhead = temp;
-				}
 
 				if (pmap.count(pair) == 0) {
 					std::vector<int> init(4, 0);
