@@ -1173,12 +1173,9 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 				<< rec.barcodes2 << '\t'
 				<< rec.barcodesUnion << '\t'
 				<< rec.barcodesIntersect << '\n';
-
 		}
 	}
 }
-
-
 
 /*
  * Return the max value and its index position
