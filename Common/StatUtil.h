@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 template <class IteratorT>
 static inline double quantile(IteratorT it1, IteratorT it2, double q)
