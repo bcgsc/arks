@@ -70,6 +70,7 @@ AC_CONFIG_FILES([
 		DataLayer/Makefile
 		Arcs/Makefile
 		bin/Makefile
+		Test/Makefile
 ])
 AC_OUTPUT
 

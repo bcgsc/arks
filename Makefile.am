@@ -2,7 +2,8 @@ SUBDIRS = \
 	Common \
 	DataLayer \
 	Arcs \
-	bin
+	bin \
+	Test
 
 dist_doc_DATA = \
 	README.md
