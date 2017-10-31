@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 
+/** compute the qth quantile, where `q` is in the range [0,1] */
 template <class IteratorT>
 static inline double quantile(IteratorT it1, IteratorT it2, double q)
 {
