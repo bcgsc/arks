@@ -5,8 +5,10 @@
 #include "Common/StatUtil.h"
 #include <zlib.h>
 #include "kseq.h"
+#include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <iomanip>
 #include <iostream>
 #include <omp.h>
 #include <string>
@@ -1294,6 +1296,8 @@ void createGraph(const ARCS::PairMap& pmap,
 				{
 					distances.push_back(sampleIt->second.distance);
 				}
+
+				std::sort(distances.begin(), distances.end());
 
 				/* use 99th percentile as upper bound on distance */
 
