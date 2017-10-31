@@ -1305,8 +1305,8 @@ void createGraph(const ARCS::PairMap& pmap,
 					distances.end(), 0.01);
 				double maxDist = quantile(distances.begin(),
 					distances.end(), 0.99);
-				g[e].minDist = minDist;
-				g[e].maxDist = maxDist;
+				g[e].minDist = int(floor(minDist));
+				g[e].maxDist = int(ceil(maxDist));
 
 				/* dump distance esimates and barcode data to TSV */
 
@@ -1316,8 +1316,8 @@ void createGraph(const ARCS::PairMap& pmap,
 						<< (index <= 1 ? 'H' : 'T') << '\t'
 						<< contigPair.second << '\t'
 						<< (index % 2 == 0 ? 'H' : 'T') << '\t'
-						<< minDist << '\t'
-						<< maxDist << '\t'
+						<< g[e].minDist << '\t'
+						<< g[e].maxDist << '\t'
 						<< rec.barcodes1 << '\t'
 						<< rec.barcodes2 << '\t'
 						<< rec.barcodesUnion << '\t'
