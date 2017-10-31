@@ -1134,17 +1134,8 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 	 * (3) is calculated by: |A union B| = |A| + |B| - |A intersect B|
 	 */
 
-	std::cerr << "contig1" << '\t'
-		<< "contig1End" << '\t'
-		<< "contig2" << '\t'
-		<< "contig2End" << '\t'
-		<< "barcodes1" << '\t'
-		<< "barcodes2" << '\t'
-		<< "barcodesUnion" << '\t'
-		<< "barcodesIntersect" << '\n';
-
-	for (ARCS::PairMapIt it = pmap.begin(); it != pmap.end(); ++it) {
-
+	for (ARCS::PairMapIt it = pmap.begin(); it != pmap.end(); ++it)
+	{
 		for (ARCS::PairOrientation i = ARCS::HH; i < ARCS::NUM_ORIENTATIONS;
 			i = ARCS::PairOrientation(i + 1))
 		{
@@ -1164,15 +1155,6 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 			assert(rec.barcodes1 + rec.barcodes2 >= rec.barcodesIntersect);
 			rec.barcodesUnion = rec.barcodes1 + rec.barcodes2
 				- rec.barcodesIntersect;
-
-			std::cerr << id1 << '\t'
-				<< (i == ARCS::HH || i == ARCS::HT ? "H" : "T") << '\t'
-				<< id2 << '\t'
-				<< (i == ARCS::HH || i == ARCS::TH ? "H" : "T") << '\t'
-				<< rec.barcodes1 << '\t'
-				<< rec.barcodes2 << '\t'
-				<< rec.barcodesUnion << '\t'
-				<< rec.barcodesIntersect << '\n';
 		}
 	}
 }
