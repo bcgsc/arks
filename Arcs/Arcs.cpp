@@ -1,6 +1,7 @@
 #include "Arcs.h"
 #include "Common/PairHash.h"
 #include "Arcs/DistanceEst.h"
+#include "Common/MapUtil.h"
 #include "Common/StatUtil.h"
 #include <zlib.h>
 #include "kseq.h"
@@ -48,9 +49,10 @@ static const char USAGE_MESSAGE[] =
 		"		-i  tsv file for the IndexMap.\n"
 		"			--> Format of file should be: <barcode> <contig name> <H/T> <count>\n"
 		"   => DISTANCE ESTIMATION OPTIONS:\n"
-		"       -D  enable distance estimation [disabled]"
-		"       -s  output TSV of intra-contig distance/barcode data [disabled]\n"
-		"       -B  bin size for number of shared barcodes [20]\n"
+		"       -D      enable distance estimation [disabled]"
+		"       -s=FILE output TSV of intra-contig distance/barcode data [disabled]\n"
+		"       -S=FILE output TSV of inter-contig distance/barcode data [disabled]\n"
+		"       -B      num neighbouring samples to estimate distance upper bound [20]\n"
 		"	=> EXTRA OUTPUT OPTIONS: <= \n"
 		"		-o   can be one of: \n"
 		"			0    no checkpoint files (default)\n"
@@ -75,7 +77,7 @@ static const char USAGE_MESSAGE[] =
 
 ARCS::ArcsParams params;
 
-static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:B:";
+static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:S:B:";
 
 enum { OPT_HELP = 1, OPT_VERSION};
 
@@ -1195,9 +1197,29 @@ static inline bool checkSignificance(int max, int second) {
  * between the scafNames.
  * VidVdes is a mapping of vertex descriptors to scafNames (vertex id).
  */
-void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
+void createGraph(const ARCS::PairMap& pmap,
+	const JaccardToDist& jaccardToDist, ARCS::Graph& g)
 {
 	ARCS::VidVdesMap vmap;
+
+	/* dump distance estimates and barcode data to TSV */
+
+	ofstream tsvOut;
+	if (!params.inter_contig_tsv.empty() && !jaccardToDist.empty()) {
+		tsvOut.open(params.inter_contig_tsv.c_str());
+		/* write TSV headers */
+		tsvOut << "contig1" << '\t'
+			<< "end1" << '\t'
+			<< "contig2" << '\t'
+			<< "end2" << '\t'
+			<< "min_dist" << '\t'
+			<< "max_dist" << '\t'
+			<< "barcodes1" << '\t'
+			<< "barcodes2" << '\t'
+			<< "barcodes_union" << '\t'
+			<< "barcodes_intersect" << '\n';
+		assert(tsvOut);
+	}
 
 	ARCS::PairMap::const_iterator it;
 	for (it = pmap.begin(); it != pmap.end(); ++it) {
@@ -1239,11 +1261,70 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 			std::tie(e, inserted) = boost::add_edge(vmap[scaf1], vmap[scaf2],
 					g);
 			if (inserted) {
+
 				g[e].weight = max;
 				g[e].orientation = index;
+
+				/* if distance estimation not enabled (`-D`) or no data */
+
+				if (jaccardToDist.empty())
+					continue;
+
+				/* calc jaccard score for current contig pair */
+
+				const ARCS::PairRecord& rec = it->second.at(index);
+				double jaccard = double(rec.barcodesIntersect)
+					/ rec.barcodesUnion;
+				assert(jaccard >= 0.0 && jaccard <= 1.0);
+				g[e].jaccard = jaccard;
+
+				/*
+				 * get intra-contig distance samples with
+				 * with closest Jaccard scores
+				 */
+
+				JaccardToDistConstIt lowerIt, upperIt;
+				std::tie(lowerIt, upperIt) =
+					closestKeys(jaccardToDist, jaccard,
+						params.dist_bin_size);
+
+				std::vector<unsigned> distances;
+				for (JaccardToDistConstIt sampleIt = lowerIt;
+					sampleIt != upperIt; ++sampleIt)
+				{
+					distances.push_back(sampleIt->second.distance);
+				}
+
+				/* use 99th percentile as upper bound on distance */
+
+				double minDist = quantile(distances.begin(),
+					distances.end(), 0.01);
+				double maxDist = quantile(distances.begin(),
+					distances.end(), 0.99);
+				g[e].minDist = minDist;
+				g[e].maxDist = maxDist;
+
+				/* dump distance esimates and barcode data to TSV */
+
+				if (!params.inter_contig_tsv.empty()) {
+					ARCS::ContigPair contigPair = it->first;
+					tsvOut << contigPair.first << '\t'
+						<< (index <= 1 ? 'H' : 'T') << '\t'
+						<< contigPair.second << '\t'
+						<< (index % 2 == 0 ? 'H' : 'T') << '\t'
+						<< minDist << '\t'
+						<< maxDist << '\t'
+						<< rec.barcodes1 << '\t'
+						<< rec.barcodes2 << '\t'
+						<< rec.barcodesUnion << '\t'
+						<< rec.barcodesIntersect << '\n';
+					assert(tsvOut);
+				}
 			}
 		}
 	}
+
+	tsvOut.close();
 }
 
 /*
@@ -1343,6 +1424,7 @@ void runArcs(vector<string> inputFiles) {
 
     ARCS::ContigToLength contigToLength;
     DistSampleMap distSamples;
+    JaccardToDist jaccardToDist;
 
     std::time_t rawtime;
 
@@ -1403,13 +1485,18 @@ void runArcs(vector<string> inputFiles) {
 		calcDistSamples(imap, contigToLength, indexMultMap, params,
 			distSamples);
 
-		if (!params.dist_samples_tsv.empty()) {
+		if (!params.intra_contig_tsv.empty()) {
 			ofstream samplesOut;
-			samplesOut.open(params.dist_samples_tsv.c_str());
+			samplesOut.open(params.intra_contig_tsv.c_str());
 			assert(samplesOut);
 			writeDistSamples(samplesOut, distSamples);
 			assert(samplesOut);
+			samplesOut.close();
 		}
+
+		std::cout << "\n=>Building jaccard => distance map... " << ctime(&rawtime);
+		buildJaccardToDist(distSamples, jaccardToDist);
+
 	}
 
 	time(&rawtime);
@@ -1418,7 +1505,7 @@ void runArcs(vector<string> inputFiles) {
 
     time(&rawtime);
     std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
-    createGraph(pmap, g);
+    createGraph(pmap, jaccardToDist, g);
 
     time(&rawtime);
     std::cout << "\n=>Starting to write graph file... " << ctime(&rawtime) << std::endl;
@@ -1533,10 +1620,13 @@ int main(int argc, char** argv) {
 			params.distance_est = true;
 			break;
 		case 's':
-			arg >> params.dist_samples_tsv;
+			arg >> params.intra_contig_tsv;
 			break;
-		case 'B':
-			arg >> params.barcodes_bin_size;
+		case 'S':
+			arg >> params.inter_contig_tsv;
+			break;
+		case'B':
+			arg >> params.dist_bin_size;
 			break;
 		case OPT_HELP:
 			std::cout << USAGE_MESSAGE;

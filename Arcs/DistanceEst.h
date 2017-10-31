@@ -3,8 +3,10 @@
 
 #include "Arcs/Arcs.h"
 #include "Common/StatUtil.h"
+#include <cstdlib>
 #include <limits>
 #include <iostream>
+#include <utility>
 
 /**
  * Records the distance between the head/tail regions of the same
@@ -31,8 +33,8 @@ struct DistSample
 typedef std::unordered_map<std::string, DistSample> DistSampleMap;
 typedef typename DistSampleMap::const_iterator DistSampleConstIt;
 
-typedef std::map<double, DistSample> JaccardToDistSample;
-typedef typename JaccardToDistSample::const_iterator JaccardToDistSampleConstIt;
+typedef std::map<double, DistSample> JaccardToDist;
+typedef typename JaccardToDist::const_iterator JaccardToDistConstIt;
 
 /**
  * Measure distance between contig ends vs.
@@ -121,9 +123,9 @@ void calcDistSamples(const ARCS::IndexMap& imap,
  * same contig, along with associated head/tail barcode
  * counts.
  */
-static inline void buildJaccardToDistSamples(
+static inline void buildJaccardToDist(
 	const DistSampleMap& distSamples,
-	JaccardToDistSample& jaccardToSamples)
+	JaccardToDist& jaccardToDist)
 {
 	for (DistSampleConstIt it = distSamples.begin();
 		it != distSamples.end(); ++it)
@@ -131,8 +133,8 @@ static inline void buildJaccardToDistSamples(
 		const DistSample& sample = it->second;
 		double jaccard = double(sample.barcodesIntersect)
 			/ sample.barcodesUnion;
-		jaccardToSamples.insert(
-			JaccardToDistSample::value_type(jaccard, sample));
+		jaccardToDist.insert(
+			JaccardToDist::value_type(jaccard, sample));
 	}
 }
 

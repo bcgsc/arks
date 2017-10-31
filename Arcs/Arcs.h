@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string>
+#include <iomanip>
 #include <iostream>
 #include <utility>
 #include <algorithm>
@@ -58,15 +59,15 @@ struct ArcsParams {
 	int verbose;
 	unsigned threads;
 	bool distance_est;
-	std::string dist_samples_tsv;
-	std::string dist_stats_tsv;
-	unsigned barcodes_bin_size;
+	std::string intra_contig_tsv;
+	std::string inter_contig_tsv;
+	unsigned dist_bin_size;
 
 	ArcsParams() :
 			program(), file(), multfile(), conrecfile(), kmapfile(), imapfile(), checkpoint_outs(0), min_reads(5), k_value(
 					30), k_shift(1), j_index(0.55), min_links(0), min_size(500), base_name(
 					""), min_mult(50), max_mult(10000), max_degree(0), end_length(
-					0), error_percent(0.05), verbose(0), threads(1), distance_est(false), barcodes_bin_size(20) {
+					0), error_percent(0.05), verbose(0), threads(1), distance_est(false), dist_bin_size(20) {
 	}
 
 };
@@ -153,16 +154,14 @@ struct VertexProperties {
 struct EdgeProperties {
 	int orientation;
 	int weight;
-	float q1;
-	float q2;
-	float q3;
-	unsigned n;
+	int minDist;
+	int maxDist;
+	float jaccard;
 	EdgeProperties() :
 		orientation(0), weight(0),
-		q1(std::numeric_limits<unsigned>::max()),
-		q2(std::numeric_limits<unsigned>::max()),
-		q3(std::numeric_limits<unsigned>::max()),
-		n(0)
+		minDist(std::numeric_limits<int>::min()),
+		maxDist(std::numeric_limits<int>::max()),
+		jaccard(-1.0f)
 	{}
 };
 
@@ -183,14 +182,14 @@ struct EdgePropertyWriter
 			<< "label=" << ep.orientation << ','
 			<< "weight=" << ep.weight;
 
-		if (ep.q1 != std::numeric_limits<unsigned>::max()) {
-			assert(ep.q2 != std::numeric_limits<unsigned>::max());
-			assert(ep.q3 != std::numeric_limits<unsigned>::max());
+		if (ep.minDist != std::numeric_limits<int>::min()) {
+			assert(ep.maxDist != std::numeric_limits<int>::max());
+			assert(ep.jaccard >= 0.0f);
 			out << ','
-				<< "q1=" << int(round(ep.q1)) << ','
-				<< "q2=" << int(round(ep.q2)) << ','
-				<< "q3=" << int(round(ep.q3)) << ','
-				<< "n=" << ep.n;
+				<< "mind=" << ep.minDist << ','
+				<< "maxd=" << ep.maxDist << ','
+				<< std::fixed << std::setprecision(2)
+				<< "j=" << ep.jaccard << '\n';
 		}
 		out << ']';
 	}
