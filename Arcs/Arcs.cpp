@@ -1027,9 +1027,6 @@ static inline std::pair<bool, bool> headOrTail(
 void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		std::unordered_map<std::string, int>& indexMultMap) {
 
-	typedef std::unordered_map<ARCS::CI, size_t, PairHash> ContigToBarcodeCount;
-	ContigToBarcodeCount contigToBarcodeCount;
-
 	/* for each Chromium barcode */
 	for (auto it = imap.begin(); it != imap.end(); ++it) {
 
@@ -1039,9 +1036,6 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		if (indexMult < params.min_mult || indexMult > params.max_mult)
 			continue;
 
-		/* maps contig head/tail to number of read pairs */
-		const ARCS::ScafMap& tailToCount = it->second;
-
 		/*
 		 * prevents counting the same contig pair multiple times
 		 * for the same barcode
@@ -1049,45 +1043,16 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		std::unordered_set<ARCS::ContigPair, PairHash> visitedPairs;
 
 		/* Iterate through all the scafNames in ScafMap */
-		for (auto o = tailToCount.begin(); o != tailToCount.end(); ++o) {
+		for (auto o = it->second.begin(); o != it->second.end(); ++o) {
+			for (auto p = it->second.begin(); p != it->second.end(); ++p) {
 
-			std::string scafA;
-			bool scafAflag;
-			std::tie(scafA, scafAflag) = o->first;
-
-			/*
-			 * Determine if read pair mappings significantly
-			 * favor the head or tail region, which helps us
-			 * orient the contig with respect to its neighbours.
-			 */
-
-			bool validA, scafAhead;
-			std::tie(validA, scafAhead) = headOrTail(tailToCount, scafA);
-			if (!validA)
-				continue;
-
-			/* count number of distinct barcodes mapping to each contig head/tail */
-			contigToBarcodeCount[o->first]++;
-
-			for (auto p = tailToCount.begin(); p != tailToCount.end(); ++p) {
-
-				std::string scafB;
-				bool scafBflag;
+				std::string scafA, scafB;
+				bool scafAflag, scafBflag;
+				std::tie(scafA, scafAflag) = o->first;
 				std::tie(scafB, scafBflag) = p->first;
 
 				/* skip self-pairs */
 				if (scafA == scafB)
-					continue;
-
-				/*
-				 * Determine if read pair mappings significantly
-				 * favor the head or tail region, which helps us
-				 * orient the contig with respect to its neighbours.
-				 */
-
-				bool validB, scafBhead;
-				std::tie(validB, scafBhead) = headOrTail(tailToCount, scafB);
-				if (!validB)
 					continue;
 
 				/* use canonical orientation to avoid double-counting pairs */
@@ -1098,67 +1063,53 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 
 				/*
 				 * Avoid counting the same pairs multiple times.
-				 * Even using a canonical orientation for each pair,
-				 * over-counting can still occur when a contig has both head
-				 * and tail records for the same barcode.
+				 * This can happen if a barcode maps to both
+				 * the head and tail regions of a contig.
 				 */
 				ARCS::ContigPair pair(scafA, scafB);
 				if (visitedPairs.find(pair) != visitedPairs.end())
 					continue;
 				visitedPairs.insert(pair);
 
+				/*
+				 * compare number of reads pairs mapping to head
+				 * and tail regions to determine probable orientation
+				 */
+
+				bool validA, validB, scafAhead, scafBhead;
+
+				std::tie(validA, scafAhead) = headOrTail(
+					it->second[std::pair<std::string, bool>(scafA, true)],
+					it->second[std::pair<std::string, bool>(scafA, false)]);
+				std::tie(validB, scafBhead) = headOrTail(
+					it->second[std::pair<std::string, bool>(scafB, true)],
+					it->second[std::pair<std::string, bool>(scafB, false)]);
+
+				/*
+				 * if orientation of one/both contigs can not be
+				 * determined with sufficient confidence (`-r` option)
+				 */
+				if (!validA || !validB)
+					continue;
+
+				/* initialize barcode/weight data for contig end pair */
 				if (pmap.count(pair) == 0)
 					pmap[pair].fill(ARCS::PairRecord());
 
 				// Head - Head
 				if (scafAhead && scafBhead) {
-					pmap[pair][0].barcodesIntersect++;
+					pmap[pair][0].weight++;
 				// Head - Tail
 				} else if (scafAhead && !scafBhead) {
-					pmap[pair][1].barcodesIntersect++;
+					pmap[pair][1].weight++;
 				// Tail - Head
 				} else if (!scafAhead && scafBhead) {
-					pmap[pair][2].barcodesIntersect++;
+					pmap[pair][2].weight++;
 				// Tail - Tail
 				} else if (!scafAhead && !scafBhead) {
-					pmap[pair][3].barcodesIntersect++;
+					pmap[pair][3].weight++;
 				}
 			}
-		}
-	}
-
-	/*
-	 * Compute/store further barcode stats for each candidate
-	 * contig pair:
-	 *
-	 * (1) number of distinct barcodes mapping to contig A (|A|)
-	 * (2) number of distinct barcodes mapping to contig B (|B|)
-	 * (3) barcode union size for contigs A and B (|A union B|)
-	 *
-	 * (3) is calculated by: |A union B| = |A| + |B| - |A intersect B|
-	 */
-
-	for (ARCS::PairMapIt it = pmap.begin(); it != pmap.end(); ++it)
-	{
-		for (ARCS::PairOrientation i = ARCS::HH; i < ARCS::NUM_ORIENTATIONS;
-			i = ARCS::PairOrientation(i + 1))
-		{
-			ARCS::PairRecord& rec = it->second.at(i);
-
-			const std::string& id1 = it->first.first;
-			const std::string& id2 = it->first.second;
-
-			ARCS::CI tail1(id1, i == ARCS::HH || i == ARCS::HT);
-			ARCS::CI tail2(id2, i == ARCS::HH || i == ARCS::TH);
-
-			rec.barcodes1 = contigToBarcodeCount.at(tail1);
-			assert(rec.barcodes1 > 0);
-			rec.barcodes2 = contigToBarcodeCount.at(tail2);
-			assert(rec.barcodes2 > 0);
-
-			assert(rec.barcodes1 + rec.barcodes2 >= rec.barcodesIntersect);
-			rec.barcodesUnion = rec.barcodes1 + rec.barcodes2
-				- rec.barcodesIntersect;
 		}
 	}
 }
@@ -1171,8 +1122,8 @@ std::pair<unsigned, unsigned> getMaxValueAndIndex(const ARCS::PairRecords& array
 	unsigned max = 0;
 	unsigned index = 0;
 	for (unsigned i = 0; i < array.size(); i++) {
-		if (array.at(i).barcodesIntersect > max) {
-			max = array.at(i).barcodesIntersect;
+		if (array.at(i).weight > max) {
+			max = array.at(i).weight;
 			index = i;
 		}
 	}
@@ -1234,9 +1185,9 @@ void createGraph(const ARCS::PairMap& pmap,
 
 		unsigned second = 0;
 		for (int i = 0; i < int(count.size()); i++) {
-			if (count[i].barcodesIntersect != max
-				&& count[i].barcodesIntersect > second)
-				second = count[i].barcodesIntersect;
+			if (count[i].weight != max
+				&& count[i].weight > second)
+				second = count[i].weight;
 		}
 
 		/* Only insert edge if orientation with max links is dominant */
@@ -1272,9 +1223,18 @@ void createGraph(const ARCS::PairMap& pmap,
 				if (jaccardToDist.empty())
 					continue;
 
-				/* calc jaccard score for current contig pair */
+				/*
+				 * barcodesUnion == 0 when pairs don't
+				 * meet basic requirements for distance estimation,
+				 * (e.g. contig length < 2 * params.end_length)
+				 */
 
 				const ARCS::PairRecord& rec = it->second.at(index);
+				if (rec.barcodesUnion == 0)
+					continue;
+
+				/* calc jaccard score for current contig pair */
+
 				double jaccard = double(rec.barcodesIntersect)
 					/ rec.barcodesUnion;
 				assert(jaccard >= 0.0 && jaccard <= 1.0);
@@ -1485,7 +1445,7 @@ void runArcs(vector<string> inputFiles) {
 	if (params.distance_est) {
 
 		time(&rawtime);
-		std::cout << "\n=>Calculating distance => barcode samples... " << ctime(&rawtime);
+		std::cout << "\n=>Measuring intra-contig distances / shared barcodes... " << ctime(&rawtime);
 		calcDistSamples(imap, contigToLength, indexMultMap, params,
 			distSamples);
 
@@ -1498,7 +1458,7 @@ void runArcs(vector<string> inputFiles) {
 			samplesOut.close();
 		}
 
-		std::cout << "\n=>Building jaccard => distance map... " << ctime(&rawtime);
+		std::cout << "\n=>Building Jaccard => distance map... " << ctime(&rawtime);
 		buildJaccardToDist(distSamples, jaccardToDist);
 
 	}
@@ -1506,6 +1466,13 @@ void runArcs(vector<string> inputFiles) {
 	time(&rawtime);
     std::cout << "\n=>Starting pairing of scaffolds... " << ctime(&rawtime);
     pairContigs(imap, pmap, indexMultMap);
+
+	if (params.distance_est) {
+		std::cout << "\n=>Calculating barcode stats for scaffold pairs... "
+			<< ctime(&rawtime);
+		calcContigPairBarcodeStats(imap, indexMultMap,
+			contigToLength, params, pmap);
+	}
 
     time(&rawtime);
     std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);

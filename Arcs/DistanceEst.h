@@ -2,6 +2,7 @@
 #define _DISTANCE_EST_H_ 1
 
 #include "Arcs/Arcs.h"
+#include "Common/PairHash.h"
 #include "Common/StatUtil.h"
 #include <cstdlib>
 #include <limits>
@@ -135,6 +136,150 @@ static inline void buildJaccardToDist(
 			/ sample.barcodesUnion;
 		jaccardToDist.insert(
 			JaccardToDist::value_type(jaccard, sample));
+	}
+}
+
+/**
+ * Check requirements for using the given barcode-to-contig-end mapping
+ * in distance estimates. Return true if we should the given
+ * mapping in our calculations.
+ */
+static inline bool validBarcodeMapping(unsigned contigLength,
+	int pairs, const ARCS::ArcsParams& params)
+{
+	/*
+	 * skip contigs with less than required number of
+	 * mapped read pairs (-c option)
+	 */
+
+	if (pairs < params.min_reads)
+		return false;
+
+	/*
+	 * skip contigs shorter than 2 times the contig
+	 * end length, our distance samples are based
+	 * based on a uniform head/tail length
+	 */
+
+	if (contigLength < unsigned(2 * params.end_length))
+		return false;
+
+	return true;
+}
+
+/** calculate shared barcode stats for candidate contig pairs */
+static inline void calcContigPairBarcodeStats(
+	const ARCS::IndexMap& imap,
+	const std::unordered_map<std::string, int>& indexMultMap,
+	const ARCS::ContigToLength& contigToLength,
+	const ARCS::ArcsParams& params,
+	ARCS::PairMap& pmap)
+{
+	typedef std::unordered_map<ARCS::CI, size_t, PairHash> ContigEndToBarcodeCount;
+	ContigEndToBarcodeCount contigEndToBarcodeCount;
+
+	/* calculate number of shared barcodes for candidate contig end pairs */
+
+	for (auto barcodeIt = imap.begin(); barcodeIt != imap.end();
+		++barcodeIt)
+	{
+		/* skip barcodes outside of min/max multiplicity range */
+		std::string index = barcodeIt->first;
+		int indexMult = indexMultMap.at(index);
+		if (indexMult < params.min_mult || indexMult > params.max_mult)
+			continue;
+
+		/* contig head/tail => number of mapped read pairs */
+		const ARCS::ScafMap& contigEndToPairCount = barcodeIt->second;
+
+		for (auto endIt1 = contigEndToPairCount.begin();
+			endIt1 != contigEndToPairCount.end(); ++endIt1)
+		{
+			/* get contig ID and head/tail flag */
+			std::string id1;
+			bool head1;
+			std::tie(id1, head1) = endIt1->first;
+
+			/* check requirements for calculating distance estimates */
+			unsigned length1 = contigToLength.at(id1);
+			int pairs1 = endIt1->second;
+			if (!validBarcodeMapping(length1, pairs1, params))
+				continue;
+
+			/* count distinct barcodes mapped to head/tail of each contig */
+			contigEndToBarcodeCount[endIt1->first]++;
+
+			for (auto endIt2 = contigEndToPairCount.begin();
+				 endIt2 != contigEndToPairCount.end(); ++endIt2)
+			{
+				/* get contig ID and head/tail flag */
+				std::string id2;
+				bool head2;
+				std::tie(id2, head2) = endIt2->first;
+
+				/* check requirements for calculating distance estimates */
+				unsigned length2 = contigToLength.at(endIt2->first.first);
+				int pairs2 = endIt2->second;
+				if (!validBarcodeMapping(length2, pairs2, params))
+					continue;
+
+				/* avoid double-counting contig end pairs */
+				if (id1 > id2)
+					continue;
+
+				/* initialize barcode/weight data for contig end pair */
+				ARCS::ContigPair pair(id1, id2);
+				if (pmap.count(pair) == 0)
+					pmap[pair].fill(ARCS::PairRecord());
+
+				// Head - Head
+				if (head1 && head2) {
+					pmap[pair][0].barcodesIntersect++;
+				// Head - Tail
+				} else if (head1 && !head2) {
+					pmap[pair][1].barcodesIntersect++;
+				// Tail - Head
+				} else if (!head1 && head2) {
+					pmap[pair][2].barcodesIntersect++;
+				// Tail - Tail
+				} else if (!head1 && !head2) {
+					pmap[pair][3].barcodesIntersect++;
+				}
+			}
+		}
+	}
+
+	/*
+	 * Compute/store further barcode stats for each candidate
+	 * contig pair:
+	 *
+	 * (1) number of distinct barcodes mapping to contig A (|A|)
+	 * (2) number of distinct barcodes mapping to contig B (|B|)
+	 * (3) barcode union size for contigs A and B (|A union B|)
+	 */
+
+	for (ARCS::PairMapIt it = pmap.begin(); it != pmap.end(); ++it)
+	{
+		for (ARCS::PairOrientation i = ARCS::HH; i < ARCS::NUM_ORIENTATIONS;
+			i = ARCS::PairOrientation(i + 1))
+		{
+			ARCS::PairRecord& rec = it->second.at(i);
+
+			const std::string& id1 = it->first.first;
+			const std::string& id2 = it->first.second;
+
+			ARCS::CI tail1(id1, i == ARCS::HH || i == ARCS::HT);
+			ARCS::CI tail2(id2, i == ARCS::HH || i == ARCS::TH);
+
+			rec.barcodes1 = contigEndToBarcodeCount.at(tail1);
+			assert(rec.barcodes1 > 0);
+			rec.barcodes2 = contigEndToBarcodeCount.at(tail2);
+			assert(rec.barcodes2 > 0);
+
+			assert(rec.barcodes1 + rec.barcodes2 >= rec.barcodesIntersect);
+			rec.barcodesUnion = rec.barcodes1 + rec.barcodes2
+				- rec.barcodesIntersect;
+		}
 	}
 }
 

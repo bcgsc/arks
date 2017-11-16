@@ -123,10 +123,12 @@ struct PairRecord
 	unsigned barcodes2;
 	unsigned barcodesUnion;
 	unsigned barcodesIntersect;
+	unsigned weight;
 
 	PairRecord() :
-		barcodes1(0), barcodes2(0),
-		barcodesUnion(0), barcodesIntersect(0) {}
+		barcodes1(0), barcodes2(0), barcodesUnion(0),
+		barcodesIntersect(0), weight(0)
+	{}
 };
 
 enum PairOrientation { HH=0, HT, TH, TT, NUM_ORIENTATIONS };
