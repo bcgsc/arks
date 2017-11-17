@@ -1215,58 +1215,27 @@ void createGraph(const ARCS::PairMap& pmap,
 					g);
 			if (inserted) {
 
+				/* set basic edge properties */
+
 				g[e].weight = max;
 				g[e].orientation = index;
 
-				/* if distance estimation not enabled (`-D`) or no data */
-
-				if (jaccardToDist.empty())
-					continue;
-
-				/*
-				 * barcodesUnion == 0 when pairs don't
-				 * meet basic requirements for distance estimation,
-				 * (e.g. contig length < 2 * params.end_length)
-				 */
+				/* estimate distance between contig ends */
 
 				const ARCS::PairRecord& rec = it->second.at(index);
-				if (rec.barcodesUnion == 0)
+				DistanceEstimate est;
+				bool success;
+
+				std::tie(est, success) = estimateDistance(rec,
+					jaccardToDist, params);
+				if (!success)
 					continue;
 
-				/* calc jaccard score for current contig pair */
+				/* set distance-related edge properties */
 
-				double jaccard = double(rec.barcodesIntersect)
-					/ rec.barcodesUnion;
-				assert(jaccard >= 0.0 && jaccard <= 1.0);
-				g[e].jaccard = jaccard;
-
-				/*
-				 * get intra-contig distance samples with
-				 * with closest Jaccard scores
-				 */
-
-				JaccardToDistConstIt lowerIt, upperIt;
-				std::tie(lowerIt, upperIt) =
-					closestKeys(jaccardToDist, jaccard,
-						params.dist_bin_size);
-
-				std::vector<unsigned> distances;
-				for (JaccardToDistConstIt sampleIt = lowerIt;
-					sampleIt != upperIt; ++sampleIt)
-				{
-					distances.push_back(sampleIt->second.distance);
-				}
-
-				std::sort(distances.begin(), distances.end());
-
-				/* use 99th percentile as upper bound on distance */
-
-				double minDist = quantile(distances.begin(),
-					distances.end(), 0.01);
-				double maxDist = quantile(distances.begin(),
-					distances.end(), 0.99);
-				g[e].minDist = int(floor(minDist));
-				g[e].maxDist = int(ceil(maxDist));
+				g[e].minDist = est.minDist;
+				g[e].maxDist = est.maxDist;
+				g[e].jaccard = est.jaccard;
 
 				/* dump distance esimates and barcode data to TSV */
 

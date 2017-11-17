@@ -2,12 +2,23 @@
 #define _DISTANCE_EST_H_ 1
 
 #include "Arcs/Arcs.h"
+#include "Common/MapUtil.h"
 #include "Common/PairHash.h"
 #include "Common/StatUtil.h"
 #include <cstdlib>
 #include <limits>
 #include <iostream>
 #include <utility>
+
+/** min/max distance estimate for a pair contigs */
+struct DistanceEstimate
+{
+	int minDist;
+	int maxDist;
+	double jaccard;
+
+	DistanceEstimate() : minDist(0), maxDist(0), jaccard(0.0) {}
+};
 
 /**
  * Records the distance between the head/tail regions of the same
@@ -281,6 +292,64 @@ static inline void calcContigPairBarcodeStats(
 				- rec.barcodesIntersect;
 		}
 	}
+}
+
+/** estimate min/max distance between a pair of contigs */
+std::pair<DistanceEstimate, bool> estimateDistance(
+	const ARCS::PairRecord& rec, const JaccardToDist& jaccardToDist,
+	const ARCS::ArcsParams& params)
+{
+	DistanceEstimate result;
+
+	/*
+	 * if distance estimation was not enabled (`-D`) or input contigs
+	 * were too short to provide any training data
+	 */
+
+	if (jaccardToDist.empty())
+		return std::make_pair(result, false);
+
+	/*
+	 * barcodesUnion == 0 when a pair doesn't
+	 * meet the requirements for distance estimation,
+	 * (e.g. contig length < 2 * params.end_length)
+	 */
+
+	if (rec.barcodesUnion == 0)
+		return std::make_pair(result, false);
+
+	/* calc jaccard score for current contig pair */
+
+	result.jaccard = double(rec.barcodesIntersect) / rec.barcodesUnion;
+	assert(result.jaccard >= 0.0 && result.jaccard <= 1.0);
+
+	/*
+	 * get intra-contig distance samples with
+	 * with closest Jaccard scores
+	 */
+
+	JaccardToDistConstIt lowerIt, upperIt;
+	std::tie(lowerIt, upperIt) =
+		closestKeys(jaccardToDist, result.jaccard,
+			params.dist_bin_size);
+
+	std::vector<unsigned> distances;
+	for (JaccardToDistConstIt sampleIt = lowerIt;
+		 sampleIt != upperIt; ++sampleIt)
+	{
+		distances.push_back(sampleIt->second.distance);
+	}
+
+	std::sort(distances.begin(), distances.end());
+
+	/* use 99th percentile as upper bound on distance */
+
+	result.minDist =
+		(int)floor(quantile(distances.begin(), distances.end(), 0.01));
+	result.maxDist =
+		(int)ceil(quantile(distances.begin(), distances.end(), 0.99));
+
+	return std::make_pair(result, true);
 }
 
 /**
