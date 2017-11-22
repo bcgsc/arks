@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "Arcs.h"
 #include "Common/PairHash.h"
 #include "Arcs/DistanceEst.h"
@@ -17,10 +19,9 @@
 KSEQ_INIT(gzFile, gzread)
 
 #define PROGRAM "arcs"
-#define VERSION "1.0.1"
 
 static const char VERSION_MESSAGE[] =
-		"VERSION: " PROGRAM " " VERSION "\n"
+		"VERSION: " PROGRAM " " PACKAGE_VERSION "\n"
 		"\n"
 		"http://www.bcgsc.ca/platform/bioinfo/software/links \n"
 		"We hope this code is useful to you -- Please send comments & suggestions to rwarren * bcgsc.ca.\n"
@@ -29,7 +30,7 @@ static const char VERSION_MESSAGE[] =
 		"LINKS and ARCS Copyright (c) 2014-2016 Canada's Michael Smith Genome Science Centre.  All rights reserved. \n";
 
 static const char USAGE_MESSAGE[] =
-		"Usage: [" PROGRAM " " VERSION "]\n"
+		"Usage: [" PROGRAM " " PACKAGE_VERSION "]\n"
 		"    arcs [Options] <chrom file list>\n"
 		"Options:\n"
 		"	=> TYPE OPTIONS: <=\n"
@@ -1321,7 +1322,7 @@ void writePostRemovalGraph(ARCS::Graph& g, const std::string graphFile) {
 void runArcs(vector<string> inputFiles) {
     std::cout << "Entered runArcs()..." << std::endl;
 
-    std::cout << "Running: " << PROGRAM << " " << VERSION
+    std::cout << "Running: " << PROGRAM << " " << PACKAGE_VERSION
         << "\n pid " << ::getpid()
 	<< "\n -p " << params.program
         << "\n -f " << params.file
