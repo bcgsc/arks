@@ -999,26 +999,6 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
 	}
 }
 
-/**
- * Based on number of read pairs that align to the
- * head or tail of scaffold, determine if it is significantly
- * different from a uniform distribution (p=0.5)
- */
-static inline std::pair<bool, bool> headOrTail(
-	const ARCS::ScafMap& tailToNumPairs,
-	const std::string& contigID)
-{
-	ARCS::ScafMapConstIt it;
-
-	it = tailToNumPairs.find(ARCS::CI(contigID, true));
-	int headPairs = (it == tailToNumPairs.end()) ? 0 : it->second;
-
-	it = tailToNumPairs.find(ARCS::CI(contigID, false));
-	int tailPairs = (it == tailToNumPairs.end()) ? 0 : it->second;
-
-	return headOrTail(headPairs, tailPairs);
-}
-
 /*
  * Iterate through IndexMap and for every pair of scaffolds
  * that align to the same index, store in PairMap. PairMap
