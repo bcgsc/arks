@@ -1331,6 +1331,47 @@ void writePostRemovalGraph(ARCS::Graph& g, const std::string graphFile) {
 	writeGraph(graphFile, g);
 }
 
+static inline void calcDistanceEstimates(
+	const ARCS::IndexMap& imap,
+	const std::unordered_map<std::string, int> &indexMultMap,
+	const ARCS::ContigToLength& contigToLength,
+	ARCS::PairMap& pmap,
+	ARCS::Graph& g)
+{
+    std::time_t rawtime;
+
+	time(&rawtime);
+	std::cout << "\n\t=>Measuring intra-contig distances / shared barcodes... "
+		<< ctime(&rawtime);
+    DistSampleMap distSamples;
+	calcDistSamples(imap, contigToLength, indexMultMap, params, distSamples);
+
+	time(&rawtime);
+	std::cout << "\n\t=>Writing intra-contig distance samples to TSV... "
+		<< ctime(&rawtime);
+	writeDistSamplesTSV(params.intra_contig_tsv, distSamples);
+
+	time(&rawtime);
+	std::cout << "\n\t=>Building Jaccard => distance map... "
+		<< ctime(&rawtime);
+	JaccardToDist jaccardToDist;
+	buildJaccardToDist(distSamples, jaccardToDist);
+
+	time(&rawtime);
+	std::cout << "\n\t=>Calculating barcode stats for scaffold pairs... "
+		<< ctime(&rawtime);
+	calcContigPairBarcodeStats(imap, indexMultMap, contigToLength, params, pmap);
+
+	time(&rawtime);
+	std::cout << "\n\t=>Adding edge distances... " << ctime(&rawtime);
+	addEdgeDistances(pmap, jaccardToDist, g);
+
+	time(&rawtime);
+	std::cout << "\n\t=>Writing distance/barcode data to TSV... "
+		<< ctime(&rawtime);
+	writeTSV(pmap, g);
+}
+
 void runArcs(vector<string> inputFiles) {
     std::cout << "Entered runArcs()..." << std::endl;
 
@@ -1369,8 +1410,6 @@ void runArcs(vector<string> inputFiles) {
     std::unordered_map<std::string, int> indexMultMap;
 
     ARCS::ContigToLength contigToLength;
-    DistSampleMap distSamples;
-    JaccardToDist jaccardToDist;
 
     std::time_t rawtime;
 
@@ -1433,29 +1472,8 @@ void runArcs(vector<string> inputFiles) {
     createGraph(pmap, g);
 
 	if (params.distance_est) {
-
-		time(&rawtime);
-		std::cout << "\n=>Measuring intra-contig distances / shared barcodes... " << ctime(&rawtime);
-		calcDistSamples(imap, contigToLength, indexMultMap, params, distSamples);
-
-		std::cout << "\n=>Writing intra-contig distance samples to TSV... " << ctime(&rawtime);
-		writeDistSamplesTSV(params.intra_contig_tsv, distSamples);
-
-		std::cout << "\n=>Building Jaccard => distance map... " << ctime(&rawtime);
-		buildJaccardToDist(distSamples, jaccardToDist);
-
-		std::cout << "\n=>Calculating barcode stats for scaffold pairs... "
-			<< ctime(&rawtime);
-		calcContigPairBarcodeStats(imap, indexMultMap,
-			contigToLength, params, pmap);
-
-		time(&rawtime);
-		std::cout << "\n=>Adding edge distances... " << ctime(&rawtime);
-		addEdgeDistances(pmap, jaccardToDist, g);
-
-		std::cout << "\n=>Writing distance/barcode data to TSV... " << ctime(&rawtime);
-		writeTSV(pmap, g);
-
+		std::cout << "\n=>Calculating distance estimates... " << ctime(&rawtime);
+		calcDistanceEstimates(imap, indexMultMap, contigToLength, pmap, g);
 	}
 
     time(&rawtime);
