@@ -1424,6 +1424,14 @@ void runArcs(vector<string> inputFiles) {
 	createIndexMap(params.imapfile, imap);
     }
 
+	time(&rawtime);
+    std::cout << "\n=>Starting pairing of scaffolds... " << ctime(&rawtime);
+    pairContigs(imap, pmap, indexMultMap);
+
+    time(&rawtime);
+    std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
+    createGraph(pmap, g);
+
 	if (params.distance_est) {
 
 		time(&rawtime);
@@ -1443,29 +1451,19 @@ void runArcs(vector<string> inputFiles) {
 		std::cout << "\n=>Building Jaccard => distance map... " << ctime(&rawtime);
 		buildJaccardToDist(distSamples, jaccardToDist);
 
-	}
-
-	time(&rawtime);
-    std::cout << "\n=>Starting pairing of scaffolds... " << ctime(&rawtime);
-    pairContigs(imap, pmap, indexMultMap);
-
-	if (params.distance_est) {
 		std::cout << "\n=>Calculating barcode stats for scaffold pairs... "
 			<< ctime(&rawtime);
 		calcContigPairBarcodeStats(imap, indexMultMap,
 			contigToLength, params, pmap);
+
+		time(&rawtime);
+		std::cout << "\n=>Adding edge distances... " << ctime(&rawtime);
+		addEdgeDistances(pmap, jaccardToDist, g);
+
+		std::cout << "\n=>Writing distance/barcode data to TSV... " << ctime(&rawtime);
+		writeTSV(pmap, g);
+
 	}
-
-    time(&rawtime);
-    std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
-    createGraph(pmap, g);
-
-    time(&rawtime);
-    std::cout << "\n=>Adding edge distances... " << ctime(&rawtime);
-	addEdgeDistances(pmap, jaccardToDist, g);
-
-    std::cout << "\n=>Writing barcode/distance data to TSV... " << ctime(&rawtime);
-	writeTSV(pmap, g);
 
     time(&rawtime);
     std::cout << "\n=>Starting to write graph file... " << ctime(&rawtime) << std::endl;
