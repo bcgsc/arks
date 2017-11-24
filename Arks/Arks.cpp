@@ -1131,29 +1131,9 @@ static inline bool checkSignificance(int max, int second) {
  * between the scafNames.
  * VidVdes is a mapping of vertex descriptors to scafNames (vertex id).
  */
-void createGraph(const ARCS::PairMap& pmap,
-	const JaccardToDist& jaccardToDist, ARCS::Graph& g)
+void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 {
 	ARCS::VidVdesMap vmap;
-
-	/* dump distance estimates and barcode data to TSV */
-
-	ofstream tsvOut;
-	if (!params.inter_contig_tsv.empty() && !jaccardToDist.empty()) {
-		tsvOut.open(params.inter_contig_tsv.c_str());
-		/* write TSV headers */
-		tsvOut << "contig1" << '\t'
-			<< "end1" << '\t'
-			<< "contig2" << '\t'
-			<< "end2" << '\t'
-			<< "min_dist" << '\t'
-			<< "max_dist" << '\t'
-			<< "barcodes1" << '\t'
-			<< "barcodes2" << '\t'
-			<< "barcodes_union" << '\t'
-			<< "barcodes_intersect" << '\n';
-		assert(tsvOut);
-	}
 
 	ARCS::PairMap::const_iterator it;
 	for (it = pmap.begin(); it != pmap.end(); ++it) {
@@ -1195,47 +1175,99 @@ void createGraph(const ARCS::PairMap& pmap,
 			std::tie(e, inserted) = boost::add_edge(vmap[scaf1], vmap[scaf2],
 					g);
 			if (inserted) {
-
-				/* set basic edge properties */
-
 				g[e].weight = max;
 				g[e].orientation = index;
-
-				/* estimate distance between contig ends */
-
-				const ARCS::PairRecord& rec = it->second.at(index);
-				DistanceEstimate est;
-				bool success;
-
-				std::tie(est, success) = estimateDistance(rec,
-					jaccardToDist, params);
-				if (!success)
-					continue;
-
-				/* set distance-related edge properties */
-
-				g[e].minDist = est.minDist;
-				g[e].maxDist = est.maxDist;
-				g[e].jaccard = est.jaccard;
-
-				/* dump distance esimates and barcode data to TSV */
-
-				if (!params.inter_contig_tsv.empty()) {
-					ARCS::ContigPair contigPair = it->first;
-					tsvOut << contigPair.first << '\t'
-						<< (index <= 1 ? 'H' : 'T') << '\t'
-						<< contigPair.second << '\t'
-						<< (index % 2 == 0 ? 'H' : 'T') << '\t'
-						<< g[e].minDist << '\t'
-						<< g[e].maxDist << '\t'
-						<< rec.barcodes1 << '\t'
-						<< rec.barcodes2 << '\t'
-						<< rec.barcodesUnion << '\t'
-						<< rec.barcodesIntersect << '\n';
-					assert(tsvOut);
-				}
 			}
 		}
+	}
+}
+
+static inline void addEdgeDistances(const ARCS::PairMap& pmap,
+	const JaccardToDist& jaccardToDist, ARCS::Graph& g)
+{
+	if (jaccardToDist.empty())
+		return;
+
+	for (const auto e : boost::make_iterator_range(boost::edges(g))) {
+
+		auto v1 = source(e, g);
+		auto v2 = target(e, g);
+
+		auto id1 = g[v1].id;
+		auto id2 = g[v2].id;
+
+		auto orientation = g[e].orientation;
+
+		auto pair = std::make_pair(id1, id2);
+		const ARCS::PairRecord& rec = pmap.at(pair).at(orientation);
+		DistanceEstimate est;
+		bool success;
+
+		std::tie(est, success) = estimateDistance(rec, jaccardToDist, params);
+		if (!success)
+			continue;
+
+		g[e].minDist = est.minDist;
+		g[e].maxDist = est.maxDist;
+		g[e].jaccard = est.jaccard;
+
+	}
+}
+
+/** dump distance estimates and barcode data to TSV */
+static inline void writeTSV(const ARCS::PairMap& pmap,
+	const ARCS::Graph& g)
+{
+	if (params.inter_contig_tsv.empty())
+		return;
+
+	/* open output TSV file */
+
+	ofstream tsvOut;
+	tsvOut.open(params.inter_contig_tsv.c_str());
+
+	/* write TSV headers */
+
+	tsvOut << "contig1" << '\t'
+			<< "end1" << '\t'
+			<< "contig2" << '\t'
+			<< "end2" << '\t'
+			<< "min_dist" << '\t'
+			<< "max_dist" << '\t'
+			<< "barcodes1" << '\t'
+			<< "barcodes2" << '\t'
+			<< "barcodes_union" << '\t'
+			<< "barcodes_intersect" << '\n';
+	assert(tsvOut);
+
+	for (const auto e : boost::make_iterator_range(boost::edges(g))) {
+
+		auto v1 = source(e, g);
+		auto v2 = target(e, g);
+
+		auto id1 = g[v1].id;
+		auto id2 = g[v2].id;
+
+		auto orientation = g[e].orientation;
+
+		auto pair = std::make_pair(id1, id2);
+		const ARCS::PairRecord& rec = pmap.at(pair).at(orientation);
+
+		/* if distance estimate was not made for this edge */
+		if (g[e].jaccard < 0.0)
+			continue;
+
+		tsvOut << pair.first << '\t'
+			<< (orientation <= 1 ? 'H' : 'T') << '\t'
+			<< pair.second << '\t'
+			<< (orientation % 2 == 0 ? 'H' : 'T') << '\t'
+			<< g[e].minDist << '\t'
+			<< g[e].maxDist << '\t'
+			<< rec.barcodes1 << '\t'
+			<< rec.barcodes2 << '\t'
+			<< rec.barcodesUnion << '\t'
+			<< rec.barcodesIntersect << '\n';
+		assert(tsvOut);
 	}
 
 	tsvOut.close();
@@ -1426,7 +1458,14 @@ void runArcs(vector<string> inputFiles) {
 
     time(&rawtime);
     std::cout << "\n=>Starting to create graph... " << ctime(&rawtime);
-    createGraph(pmap, jaccardToDist, g);
+    createGraph(pmap, g);
+
+    time(&rawtime);
+    std::cout << "\n=>Adding edge distances... " << ctime(&rawtime);
+	addEdgeDistances(pmap, jaccardToDist, g);
+
+    std::cout << "\n=>Writing barcode/distance data to TSV... " << ctime(&rawtime);
+	writeTSV(pmap, g);
 
     time(&rawtime);
     std::cout << "\n=>Starting to write graph file... " << ctime(&rawtime) << std::endl;
