@@ -172,7 +172,7 @@ struct EdgePropertyWriter
 				<< "mind=" << ep.minDist << ','
 				<< "maxd=" << ep.maxDist << ','
 				<< std::fixed << std::setprecision(2)
-				<< "j=" << ep.jaccard << '\n';
+				<< "j=" << ep.jaccard;
 		}
 		out << ']';
 	}
