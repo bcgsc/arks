@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(ARKS, 1.0.0, cjustin@bcgsc.ca)
+AC_INIT(ARKS, 1.0.1, cjustin@bcgsc.ca)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([Arks/Arks.cpp])
 AC_CONFIG_HEADER([config.h])

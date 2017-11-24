@@ -1,0 +1,8 @@
+2017-11-24  Ben Vandervalk  <benv@bcgsc.ca>
+
+	* Release version 1.0.1.
+	* rename ARCS => ARKS (binary and source files)
+
+2017-11-23  Ben Vandervalk  <benv@bcgsc.ca>
+
+	* Release version 1.0.0.
