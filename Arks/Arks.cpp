@@ -1436,17 +1436,10 @@ void runArcs(vector<string> inputFiles) {
 
 		time(&rawtime);
 		std::cout << "\n=>Measuring intra-contig distances / shared barcodes... " << ctime(&rawtime);
-		calcDistSamples(imap, contigToLength, indexMultMap, params,
-			distSamples);
+		calcDistSamples(imap, contigToLength, indexMultMap, params, distSamples);
 
-		if (!params.intra_contig_tsv.empty()) {
-			ofstream samplesOut;
-			samplesOut.open(params.intra_contig_tsv.c_str());
-			assert(samplesOut);
-			writeDistSamples(samplesOut, distSamples);
-			assert(samplesOut);
-			samplesOut.close();
-		}
+		std::cout << "\n=>Writing intra-contig distance samples to TSV... " << ctime(&rawtime);
+		writeDistSamplesTSV(params.intra_contig_tsv, distSamples);
 
 		std::cout << "\n=>Building Jaccard => distance map... " << ctime(&rawtime);
 		buildJaccardToDist(distSamples, jaccardToDist);

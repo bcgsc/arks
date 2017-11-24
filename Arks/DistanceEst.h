@@ -358,7 +358,7 @@ std::pair<DistanceEstimate, bool> estimateDistance(
  * of the same contig with associated barcode stats (e.g.
  * barcode intersection size).
  */
-static inline std::ostream& writeDistSamples(std::ostream& out,
+static inline std::ostream& writeDistSamplesTSV(std::ostream& out,
 	const DistSampleMap& distSamples)
 {
 	out << "contig_id" << '\t'
@@ -383,6 +383,24 @@ static inline std::ostream& writeDistSamples(std::ostream& out,
 	}
 
 	return out;
+}
+
+/**
+ * Write intra-contig distance samples and barcode counts to a
+ * TSV file.
+ */
+static inline void writeDistSamplesTSV(const std::string& path,
+	const DistSampleMap& distSamples)
+{
+	if (path.empty())
+		return;
+
+	ofstream samplesOut;
+	samplesOut.open(path.c_str());
+	assert(samplesOut);
+	writeDistSamplesTSV(samplesOut, distSamples);
+	assert(samplesOut);
+	samplesOut.close();
 }
 
 #endif
