@@ -4,7 +4,7 @@
 AC_PREREQ(2.59)
 AC_INIT(ARKS, 1.0.0, cjustin@bcgsc.ca)
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([Arcs/Arcs.cpp])
+AC_CONFIG_SRCDIR([Arks/Arks.cpp])
 AC_CONFIG_HEADER([config.h])
 
 AC_PROG_RANLIB
@@ -68,7 +68,7 @@ AC_CONFIG_FILES([
 		Makefile
 		Common/Makefile
 		DataLayer/Makefile
-		Arcs/Makefile
+		Arks/Makefile
 		bin/Makefile
 		Test/Makefile
 ])

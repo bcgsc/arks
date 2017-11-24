@@ -1,8 +1,8 @@
 #include "config.h"
 
-#include "Arcs.h"
+#include "Arks.h"
 #include "Common/PairHash.h"
-#include "Arcs/DistanceEst.h"
+#include "Arks/DistanceEst.h"
 #include "Common/MapUtil.h"
 #include "Common/StatUtil.h"
 #include <zlib.h>
@@ -18,7 +18,7 @@
 
 KSEQ_INIT(gzFile, gzread)
 
-#define PROGRAM "arcs"
+#define PROGRAM "arks"
 
 static const char VERSION_MESSAGE[] =
 		"VERSION: " PROGRAM " " PACKAGE_VERSION "\n"

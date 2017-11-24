@@ -1,7 +1,7 @@
 #ifndef _DISTANCE_EST_H_
 #define _DISTANCE_EST_H_ 1
 
-#include "Arcs/Arcs.h"
+#include "Arks/Arks.h"
 #include "Common/MapUtil.h"
 #include "Common/PairHash.h"
 #include "Common/StatUtil.h"

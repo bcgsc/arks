@@ -1,7 +1,7 @@
 SUBDIRS = \
 	Common \
 	DataLayer \
-	Arcs \
+	Arks \
 	bin \
 	Test
 
