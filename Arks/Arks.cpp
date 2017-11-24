@@ -1073,22 +1073,23 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 				if (!validA || !validB)
 					continue;
 
-				/* initialize barcode/weight data for contig end pair */
-				if (pmap.count(pair) == 0)
-					pmap[pair].fill(ARCS::PairRecord());
+				if (pmap.count(pair) == 0) {
+					std::vector<int> init(4, 0);
+					pmap[pair] = init;
+				}
 
 				// Head - Head
 				if (scafAhead && scafBhead) {
-					pmap[pair][0].weight++;
+					pmap[pair][0]++;
 				// Head - Tail
 				} else if (scafAhead && !scafBhead) {
-					pmap[pair][1].weight++;
+					pmap[pair][1]++;
 				// Tail - Head
 				} else if (!scafAhead && scafBhead) {
-					pmap[pair][2].weight++;
+					pmap[pair][2]++;
 				// Tail - Tail
 				} else if (!scafAhead && !scafBhead) {
-					pmap[pair][3].weight++;
+					pmap[pair][3]++;
 				}
 			}
 		}
@@ -1099,17 +1100,17 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
  * Return the max value and its index position
  * in the vector
  */
-std::pair<unsigned, unsigned> getMaxValueAndIndex(const ARCS::PairRecords& array) {
-	unsigned max = 0;
-	unsigned index = 0;
-	for (unsigned i = 0; i < array.size(); i++) {
-		if (array.at(i).weight > max) {
-			max = array.at(i).weight;
+std::pair<int, int> getMaxValueAndIndex(const std::vector<int> array) {
+	int max = 0;
+	int index = 0;
+	for (int i = 0; i < int(array.size()); i++) {
+		if (array[i] > max) {
+			max = array[i];
 			index = i;
 		}
 	}
 
-	std::pair<unsigned, unsigned> result(max, index);
+	std::pair<int, int> result(max, index);
 	return result;
 }
 
@@ -1140,15 +1141,14 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 		std::string scaf1, scaf2;
 		std::tie(scaf1, scaf2) = it->first;
 
-		unsigned max, index;
-		ARCS::PairRecords count = it->second;
+		int max, index;
+		std::vector<int> count = it->second;
 		std::tie(max, index) = getMaxValueAndIndex(count);
 
-		unsigned second = 0;
+		int second = 0;
 		for (int i = 0; i < int(count.size()); i++) {
-			if (count[i].weight != max
-				&& count[i].weight > second)
-				second = count[i].weight;
+			if (count[i] != max && count[i] > second)
+				second = count[i];
 		}
 
 		/* Only insert edge if orientation with max links is dominant */
@@ -1244,7 +1244,6 @@ static inline void calcDistanceEstimates(
 	const ARCS::IndexMap& imap,
 	const std::unordered_map<std::string, int> &indexMultMap,
 	const ARCS::ContigToLength& contigToLength,
-	ARCS::PairMap& pmap,
 	ARCS::Graph& g)
 {
     std::time_t rawtime;
@@ -1269,16 +1268,17 @@ static inline void calcDistanceEstimates(
 	time(&rawtime);
 	std::cout << "\n\t=>Calculating barcode stats for scaffold pairs... "
 		<< ctime(&rawtime);
-	calcContigPairBarcodeStats(imap, indexMultMap, contigToLength, params, pmap);
+	PairToBarcodeStats pairToStats;
+	buildPairToBarcodeStats(imap, indexMultMap, contigToLength, params, pairToStats);
 
 	time(&rawtime);
 	std::cout << "\n\t=>Adding edge distances... " << ctime(&rawtime);
-	addEdgeDistances(pmap, jaccardToDist, params, g);
+	addEdgeDistances(pairToStats, jaccardToDist, params, g);
 
 	time(&rawtime);
 	std::cout << "\n\t=>Writing distance/barcode data to TSV... "
 		<< ctime(&rawtime);
-	writeTSV(params.inter_contig_tsv, pmap, g);
+	writeTSV(params.inter_contig_tsv, pairToStats, g);
 }
 
 void runArcs(vector<string> inputFiles) {
@@ -1382,7 +1382,7 @@ void runArcs(vector<string> inputFiles) {
 
     if (params.distance_est) {
         std::cout << "\n=>Calculating distance estimates... " << ctime(&rawtime);
-        calcDistanceEstimates(imap, indexMultMap, contigToLength, pmap, g);
+        calcDistanceEstimates(imap, indexMultMap, contigToLength, g);
     }
 
     time(&rawtime);

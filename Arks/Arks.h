@@ -116,30 +116,11 @@ typedef typename ScafMap::const_iterator ScafMapConstIt;
 /* IndexMap: key = index sequence, value = ScafMap */
 typedef std::unordered_map<std::string, ScafMap> IndexMap;
 
-/** Records barcode stats for a pair of contig ends */
-struct PairRecord
-{
-	unsigned barcodes1;
-	unsigned barcodes2;
-	unsigned barcodesUnion;
-	unsigned barcodesIntersect;
-	unsigned weight;
-
-	PairRecord() :
-		barcodes1(0), barcodes2(0), barcodesUnion(0),
-		barcodesIntersect(0), weight(0)
-	{}
-};
-
-enum PairOrientation { HH=0, HT, TH, TT, NUM_ORIENTATIONS };
-typedef std::array<PairRecord, NUM_ORIENTATIONS> PairRecords;
-
-/*
- * PairMap: key = pair of scaf sequence id, value = num links for
- * HH, HT, TH, TT orientations of pair
- */
+/** a pair of contig IDs */
 typedef std::pair<std::string, std::string> ContigPair;
-typedef std::map<ContigPair, PairRecords> PairMap;
+
+/* PairMap: key = pair of scaf sequence id, value = num links*/
+typedef std::map<std::pair<std::string, std::string>, std::vector<int>> PairMap;
 typedef typename PairMap::iterator PairMapIt;
 
 /** maps contig FASTA ID to contig length (bp) */
