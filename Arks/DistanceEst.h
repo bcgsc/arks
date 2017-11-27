@@ -414,7 +414,7 @@ static inline void addEdgeDistances(
 }
 
 /** dump distance estimates and barcode data to TSV */
-static inline void writeTSV(const std::string& path,
+static inline void writeDistTSV(const std::string& path,
 	const PairToBarcodeStats& pairToStats, const ARCS::Graph& g)
 {
 	if (path.empty())
@@ -428,9 +428,7 @@ static inline void writeTSV(const std::string& path,
 	/* write TSV headers */
 
 	tsvOut << "contig1" << '\t'
-			<< "end1" << '\t'
 			<< "contig2" << '\t'
-			<< "end2" << '\t'
 			<< "min_dist" << '\t'
 			<< "max_dist" << '\t'
 			<< "barcodes1" << '\t'
@@ -452,20 +450,33 @@ static inline void writeTSV(const std::string& path,
 		auto pair = std::make_pair(id1, id2);
 		const BarcodeStats& stats = pairToStats.at(pair).at(orientation);
 
-		/* if distance estimate was not made for this edge */
-		if (g[e].jaccard < 0.0)
-			continue;
+		bool sense1 = orientation < 2;
+		bool sense2 = orientation % 2;
 
-		tsvOut << pair.first << '\t'
-			<< (orientation <= 1 ? 'H' : 'T') << '\t'
-			<< pair.second << '\t'
-			<< (orientation % 2 == 0 ? 'H' : 'T') << '\t'
-			<< g[e].minDist << '\t'
-			<< g[e].maxDist << '\t'
-			<< stats.barcodes1 << '\t'
+		tsvOut << pair.first << (sense1 ? '-' : '+') << '\t'
+			<< pair.second << (sense2 ? '-' : '+') << '\t';
+		if (g[e].jaccard >= 0) {
+			tsvOut << g[e].minDist << '\t' << g[e].maxDist << '\t';
+		} else {
+			tsvOut << "NA" << '\t' << "NA" << '\t';
+		}
+		tsvOut << stats.barcodes1 << '\t'
 			<< stats.barcodes2 << '\t'
 			<< stats.barcodesUnion << '\t'
 			<< stats.barcodesIntersect << '\n';
+
+		tsvOut << pair.second << (sense2 ? '+' : '-') << '\t'
+			<< pair.first << (sense1 ? '+' : '-') << '\t';
+		if (g[e].jaccard >= 0) {
+			tsvOut << g[e].minDist << '\t' << g[e].maxDist << '\t';
+		} else {
+			tsvOut << "NA" << '\t' << "NA" << '\t';
+		}
+		tsvOut << stats.barcodes2 << '\t'
+			<< stats.barcodes1 << '\t'
+			<< stats.barcodesUnion << '\t'
+			<< stats.barcodesIntersect << '\n';
+
 		assert(tsvOut);
 	}
 

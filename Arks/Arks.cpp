@@ -1278,7 +1278,7 @@ static inline void calcDistanceEstimates(
 	time(&rawtime);
 	std::cout << "\n\t=>Writing distance/barcode data to TSV... "
 		<< ctime(&rawtime);
-	writeTSV(params.inter_contig_tsv, pairToStats, g);
+	writeDistTSV(params.inter_contig_tsv, pairToStats, g);
 }
 
 void runArcs(vector<string> inputFiles) {
