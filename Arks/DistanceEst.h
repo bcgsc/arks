@@ -398,7 +398,11 @@ static inline void addEdgeDistances(
 		auto orientation = g[e].orientation;
 
 		auto pair = std::make_pair(id1, id2);
-		const BarcodeStats& stats = pairToStats.at(pair).at(orientation);
+		auto statsIt = pairToStats.find(pair);
+		if (statsIt == pairToStats.end())
+			continue;
+		const BarcodeStats& stats = statsIt->second.at(orientation);
+
 		DistanceEstimate est;
 		bool success;
 
@@ -448,7 +452,10 @@ static inline void writeDistTSV(const std::string& path,
 		auto orientation = g[e].orientation;
 
 		auto pair = std::make_pair(id1, id2);
-		const BarcodeStats& stats = pairToStats.at(pair).at(orientation);
+		auto statsIt = pairToStats.find(pair);
+		if (statsIt == pairToStats.end())
+			continue;
+		const BarcodeStats& stats = statsIt->second.at(orientation);
 
 		bool sense1 = orientation < 2;
 		bool sense2 = orientation % 2;
