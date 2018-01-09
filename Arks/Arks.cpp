@@ -82,7 +82,7 @@ ARCS::ArcsParams params;
 
 static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:S:B:";
 
-enum { OPT_HELP = 1, OPT_VERSION};
+enum { OPT_HELP = 1, OPT_VERSION, OPT_NO_DIST_EST };
 
 static const struct option longopts[] = {
     {"program", required_argument, NULL, 'p'},
@@ -103,6 +103,8 @@ static const struct option longopts[] = {
     {"max_degree", required_argument, NULL, 'd'},
     {"end_length", required_argument, NULL, 'e'},
     {"error_percent", required_argument, NULL, 'r'},
+    {"dist_est", no_argument, NULL, 'D'},
+    {"no_dist_est", no_argument, NULL, OPT_NO_DIST_EST},
     {"run_verbose", no_argument, NULL, 'v'},
     {"threads", required_argument, NULL, 't'},
     {"version", no_argument, NULL, OPT_VERSION},
@@ -1503,8 +1505,11 @@ int main(int argc, char** argv) {
 		case 'S':
 			arg >> params.inter_contig_tsv;
 			break;
-		case'B':
+		case 'B':
 			arg >> params.dist_bin_size;
+			break;
+		case OPT_NO_DIST_EST:
+			params.distance_est = false;
 			break;
 		case OPT_HELP:
 			std::cout << USAGE_MESSAGE;
