@@ -1,3 +1,12 @@
+2018-01-09  Ben Vandervalk  <benv@bcgsc.ca>
+
+	* Release version 1.0.2
+	* Use distance estimates in makeTSVfile.py, when available
+	(LINKS integration)
+	* Fix out-of-range crashes on contigs / contig pairs without
+	Chromium barcode mappings
+	* Clean up Graphviz output
+
 2017-11-24  Ben Vandervalk  <benv@bcgsc.ca>
 
 	* Release version 1.0.1.
