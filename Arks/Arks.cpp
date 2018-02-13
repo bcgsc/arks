@@ -793,7 +793,7 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 	int skipped_nogoodcontig = 0;
 	int invalidbarcode = 0;
 
-	int count = 0;
+	size_t count = 0;
 	bool stop = false;
 
 	//each thread gets a proc;
