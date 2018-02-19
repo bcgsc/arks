@@ -65,7 +65,7 @@ static const char USAGE_MESSAGE[] =
 		"   -c  Minimum number of mapping read pairs/Index required before creating edge in graph. (default: 5)\n"
 		"   -k  k-value for the size of a k-mer. (default: 30) (required)\n"
 		"   -g  shift between k-mers (default: 1)\n"
-		"   -j  Minimum Jaccard Index for a read to be associated with a contigId. (default: 0.55)\n"
+		"   -j  Minimum fraction of read kmers matching a contigId for a read to be associated with the contigId. (default: 0.55)\n"
 		"   -l  Minimum number of links to create edge in graph (default: 0)\n"
 		"   -z  Minimum contig length to consider for scaffolding (default: 500)\n"
 		"   -b  Base name for your output files (optional)\n"
