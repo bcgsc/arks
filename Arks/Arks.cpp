@@ -147,7 +147,7 @@ bool HTtoBool(std::string ht) {
 static inline bool checkIndex(std::string seq) {
 	for (int i = 0; i < static_cast<int>(seq.length()); i++) {
 		char c = toupper(seq[i]);
-		if (c != 'A' && c != 'T' && c != 'G' && c != 'C')
+		if (c != 'A' && c != 'T' && c != 'C' && c != 'G')
 			return false;
 
 	}
@@ -312,7 +312,7 @@ void createIndexMultMap(std::string multfile, std::unordered_map<std::string, in
 
 		numreadstotal += multiplicity;
 
-		if (!barcode.empty() && checkIndex(barcode)) {
+		if (!barcode.empty()) {
 			numreadskept += multiplicity;
 			indexMultMap[barcode] = multiplicity;
 		} else {
