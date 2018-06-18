@@ -144,16 +144,16 @@ bool HTtoBool(std::string ht) {
 }
 
 /* Returns true if the barcode only contains ATGC */
-// static inline bool checkIndex(std::string seq) {
-// 	for (int i = 0; i < static_cast<int>(seq.length()); i++) {
-// 		char c = toupper(seq[i]);
-// 		if (c != 'A' && c != 'T' && c != 'C' && c != 'G')
-// 			return false;
-//
-// 	}
-// 	//return (static_cast<int>(seq.length()) == params.indexLen);
-// 	return true;
-// }
+static inline bool checkIndex(std::string seq) {
+	for (int i = 0; i < static_cast<int>(seq.length()); i++) {
+		char c = toupper(seq[i]);
+		if (c != 'A' && c != 'T' && c != 'C' && c != 'G')
+			return false;
+
+	}
+	//return (static_cast<int>(seq.length()) == params.indexLen);
+	return true;
+}
 
 /* Returns true if the contig sequence contains ATGC or IUPAC codes */
 static inline bool checkContigSequence(std::string seq) {
@@ -312,7 +312,7 @@ void createIndexMultMap(std::string multfile, std::unordered_map<std::string, in
 
 		numreadstotal += multiplicity;
 
-		if (!barcode.empty()) {
+		if (!barcode.empty() && checkIndex(barcode)) {
 			numreadskept += multiplicity;
 			indexMultMap[barcode] = multiplicity;
 		} else {
