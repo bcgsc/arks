@@ -52,8 +52,7 @@ and compare your output to the files provided at: Examples/arks_test-demo/output
 ### Citing ARKS
 
 Paper :
-https://doi.org/10.1101/100750
-
+https://doi.org/10.1101/306902
 
 LINKS :
 http://www.bcgsc.ca/platform/bioinfo/software/links
