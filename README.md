@@ -34,6 +34,8 @@ If your boost library headers are not in your PATH you can specify their locatio
 
 ### ARKS+LINKS Pipeline 
 
+The Makefile located here: Examples/arks-make will run the full ARKS pipeline, including the 3 steps below. It will also optionally run the misassembly corrector [Tigmint](https://github.com/bcgsc/tigmint) prior to scaffolding with ARKS.
+
 There are three steps to the pipeline:
 
 1. Run ARKS to generate a Graphviz Dot file (.gv). Nodes in the graph are the sequences to scaffold, and edges show that there is evidence to suggest nodes are linked based on the data obtained from the GemCode/Chromium reads.
@@ -42,10 +44,10 @@ There are three steps to the pipeline:
 
 3. Run LINKS with the XXX.tigpair_checkpoint file as input. To do this, the base name (-b) must be set to the same name as XXX.
 
-An example bash script on how to run the ARKS+LINKS pipeline can be found at: Examples/pipeline_example.sh
+An example bash script on how to run the ARKS+LINKS pipeline using the ARKS Makefile can be found at: Examples/pipeline_example.sh
 
-you can test your installation by following instructions at: Examples/arcs_test-demo/README.txt
-and compare your output to the files provided at: Examples/arcs_test-demo/output/ 
+you can test your installation by following instructions at: Examples/arks_test-demo/README.txt
+and compare your output to the files provided at: Examples/arks_test-demo/output/ 
 
 ### Citing ARKS
 
