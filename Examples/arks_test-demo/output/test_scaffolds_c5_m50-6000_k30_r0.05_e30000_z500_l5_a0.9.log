@@ -1,5 +1,5 @@
 
-Running: /projects/rwarren_prj2/LINKS/paper/links_v1.8.6hpce//LINKS [v1.8.6]
+Running: /projects/rwarren_prj2/LINKS/paper/links_v1.8.5//LINKS [v1.8.5]
 -f test_scaffolds.renamed.fa
 -s empty.fof
 -m 
@@ -24,29 +24,20 @@ Checking sequence target file test_scaffolds.renamed.fa...ok
 Scaffolding mid-point files:
 test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.tigpair_checkpoint.tsv
 test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.simplepair_checkpoint.tsv
-detected; LINKS will skip contig pairing and use info from files instead : Mon Jun 18 09:59:31 PDT 2018
+detected; LINKS will skip contig pairing and use info from files instead: Wed Jun 20 16:21:00 PDT 2018
 
-Reading sequences from test_scaffolds.renamed.fa : Mon Jun 18 09:59:31 PDT 2018
-
-done.
-Reading sequence pairs from test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.tigpair_checkpoint.tsv : Mon Jun 18 09:59:31 PDT 2018
-
-done.
-Building scaffolds : Mon Jun 18 09:59:31 PDT 2018
-
-done.
-Building .gv graph : Mon Jun 18 09:59:31 PDT 2018
+Building .gv graph: Wed Jun 20 16:21:00 PDT 2018
 
 
-=>Scaffolding ended : Mon Jun 18 09:59:31 PDT 2018
+=>Scaffolding ended: Wed Jun 20 16:21:00 PDT 2018
 Scaffolds layout in: test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.scaffolds
 Scaffold graph in: test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.gv
 
 
-=>Making FASTA file : Mon Jun 18 09:59:31 PDT 2018
-Scaffolds FASTA in : test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.scaffolds.fa
+=>Making FASTA file: Wed Jun 20 16:21:00 PDT 2018
+Scaffolds FASTA in: test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.scaffolds.fa
 
 
-=>Wrote correspondence file tracking LINKScontigID <=> OriginalContigNames : test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.assembly_correspondence.tsv
+=>Wrote correspondence file tracking LINKScontigID <=> OriginalContigNames: test_scaffolds_c5_m50-6000_k30_r0.05_e30000_z500_l5_a0.9.assembly_correspondence.tsv
 
-Scaffolding executed normally Mon Jun 18 09:59:31 PDT 2018
+Scaffolding executed normally Wed Jun 20 16:21:00 PDT 2018
