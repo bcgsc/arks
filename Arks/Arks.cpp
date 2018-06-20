@@ -312,7 +312,7 @@ void createIndexMultMap(std::string multfile, std::unordered_map<std::string, in
 
 		numreadstotal += multiplicity;
 
-		if (!barcode.empty() && checkIndex(barcode)) {
+		if (!barcode.empty()) {
 			numreadskept += multiplicity;
 			indexMultMap[barcode] = multiplicity;
 		} else {
@@ -868,21 +868,27 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 
 		if (!stop) {
 			barcode1.clear();
-			for (std::string::iterator i = comment1.begin(); i != comment1.end();
-					i++) {
-				if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
-						&& *i != '-' && *i != '1' && *i != '\n') {
-					barcode1 += *i;
-				}
-			}
+            int comment1Len = comment1.length() - 1;
+            if(comment1Len > 5)
+                barcode1 = comment1.substr(5, comment1Len);
+			// for (std::string::iterator i = comment1.begin(); i != comment1.end();
+			// 		i++) {
+			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
+			// 			&& *i != '\n') {
+			// 		barcode1 += *i;
+			// 	}
+			// }
 			barcode2.clear();
-			for (std::string::iterator i = comment2.begin(); i != comment2.end();
-					i++) {
-				if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
-						&& *i != '-' && *i != '1' && *i != '\n') {
-					barcode2 += *i;
-				}
-			}
+            int comment2Len = comment2.length() - 1;
+            if(comment2Len > 5)
+                barcode2 = comment2.substr(5, comment2Len);
+			// for (std::string::iterator i = comment2.begin(); i != comment2.end();
+			// 		i++) {
+			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
+			// 			&& *i != '\n') {
+			// 		barcode2 += *i;
+			// 	}
+			// }
 
 			bool validbarcode = indexMultMap.find(barcode1) != indexMultMap.end();
 
@@ -1283,8 +1289,8 @@ static inline void calcDistanceEstimates(
 	writeDistTSV(params.inter_contig_tsv, pairToStats, g);
 }
 
-void runArcs(vector<string> inputFiles) {
-    std::cout << "Entered runArcs()..." << std::endl;
+void runArks(vector<string> inputFiles) {
+    std::cout << "Entered runArks()..." << std::endl;
 
     std::cout << "Running: " << PROGRAM << " " << PACKAGE_VERSION
         << "\n pid " << ::getpid()
@@ -1567,9 +1573,9 @@ int main(int argc, char** argv) {
 		params.base_name = filename.str();
 	}
 
-	printf("%s\n", "Finished reading user inputs...entering runArcs()...");
+	printf("%s\n", "Finished reading user inputs...entering runArks()...");
 
-	runArcs(inputFiles);
+	runArks(inputFiles);
 
 	return 0;
 }
