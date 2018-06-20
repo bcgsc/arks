@@ -884,14 +884,6 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
                 }
             }
 
-			// for (std::string::iterator i = comment1.begin(); i != comment1.end();
-			// 		i++) {
-			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
-			// 			&& *i != '\n') {
-			// 		barcode1 += *i;
-			// 	}
-			// }
-
 			barcode2.clear();
             //Find position of BX:Z:
             foundTag = comment2.find("BX:Z:");
@@ -906,14 +898,6 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
                     barcode2 = comment2.substr(foundTag + 5);
                 }
             }
-
-			// for (std::string::iterator i = comment2.begin(); i != comment2.end();
-			// 		i++) {
-			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
-			// 			&& *i != '\n') {
-			// 		barcode2 += *i;
-			// 	}
-			// }
 
 			bool validbarcode = indexMultMap.find(barcode1) != indexMultMap.end();
 
