@@ -30,7 +30,7 @@ sub readFastq {
 	my $cmd = "gunzip -c $readFile|";
 	open(READS, $cmd) || die "Can't run $cmd...\n";
 	while(<READS>){
-		if(/^\@\S+\s+BX:Z:(\S+)/){
+		if(/^\@.*BX:Z:(\S+).*/){
 			my $ind = $1;
 			$indices->{$ind}++;
 		}

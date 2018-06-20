@@ -1,5 +1,5 @@
-#ifndef ARCS_H
-#define ARCS_H 1
+#ifndef ARKS_H
+#define ARKS_H 1
 
 #include <stdio.h>
 #include <cstdio>
@@ -30,12 +30,12 @@
 #include <google/sparse_hash_map>
 #include "city.h"
 
-namespace ARCS {
+namespace ARKS {
 
 /**
- * Parameters controlling ARCS run
+ * Parameters controlling ARKS run
  */
-struct ArcsParams {
+struct ArksParams {
 
 	std::string program; 
 	std::string file;
@@ -63,7 +63,7 @@ struct ArcsParams {
 	std::string inter_contig_tsv;
 	unsigned dist_bin_size;
 
-	ArcsParams() :
+	ArksParams() :
 			program(), file(), multfile(), conrecfile(), kmapfile(), imapfile(), checkpoint_outs(0), min_reads(5), k_value(
 					30), k_shift(1), j_index(0.55), min_links(0), min_size(500), base_name(
 					""), min_mult(50), max_mult(10000), max_degree(0), end_length(
@@ -196,7 +196,7 @@ struct VertexPropertyWriter
 
 typedef boost::undirected_graph<VertexProperties, EdgeProperties> Graph;
 typedef std::unordered_map<std::string, Graph::vertex_descriptor> VidVdesMap;
-typedef boost::graph_traits<ARCS::Graph>::vertex_descriptor VertexDes;
+typedef boost::graph_traits<ARKS::Graph>::vertex_descriptor VertexDes;
 }
 
 #endif

@@ -25,13 +25,13 @@ static const char VERSION_MESSAGE[] =
 		"\n"
 		"http://www.bcgsc.ca/platform/bioinfo/software/links \n"
 		"We hope this code is useful to you -- Please send comments & suggestions to rwarren * bcgsc.ca.\n"
-		"If you use LINKS, ARCS code or ideas, please cite our work. \n"
+		"If you use LINKS, ARKS code or ideas, please cite our work. \n"
 		"\n"
-		"LINKS and ARCS Copyright (c) 2014-2016 Canada's Michael Smith Genome Science Centre.  All rights reserved. \n";
+		"LINKS and ARKS Copyright (c) 2014-2016 Canada's Michael Smith Genome Science Centre.  All rights reserved. \n";
 
 static const char USAGE_MESSAGE[] =
 		"Usage: [" PROGRAM " " PACKAGE_VERSION "]\n"
-		"    arcs [Options] <chrom file list>\n"
+		"    arks [Options] <chrom file list>\n"
 		"Options:\n"
 		"	=> TYPE OPTIONS: <=\n"
 		"	   -p can be one of:\n"
@@ -76,9 +76,9 @@ static const char USAGE_MESSAGE[] =
 		"   -t 	Number of threads.(default: 1)\n"
 		"   -v  Runs in verbose mode (optional, default: 0)\n";
 
-/* ARCS PREPARATION AKA GLOBAL VARIABLES: */
+/* ARKS PREPARATION AKA GLOBAL VARIABLES: */
 
-ARCS::ArcsParams params;
+ARKS::ArksParams params;
 
 static const char shortopts[] = "p:f:a:q:w:i:o:c:k:g:j:l:z:b:m:d:e:r:vt:Ds:S:B:";
 
@@ -212,14 +212,14 @@ vector<string> convertInputString(const string &inputString) {
 /* Write TSV checkpoint files */
 
 /* writes contigRecord table to TSV */
-void writeContigRecord(std::vector<ARCS::CI> &contigRecord) {
+void writeContigRecord(std::vector<ARKS::CI> &contigRecord) {
 
 	std::string outputfilename = params.base_name + "_contigrec.tsv";
 
 	FILE* fout = fopen(outputfilename.c_str(), "w");
 
 	size_t conreci = 0;
-	for (std::vector<ARCS::CI>::iterator it = contigRecord.begin(); it != contigRecord.end(); ++it) {
+	for (std::vector<ARKS::CI>::iterator it = contigRecord.begin(); it != contigRecord.end(); ++it) {
 		std::string contigname = it->first;
 		std::string ht = HeadOrTail(it->second);
 		fprintf(fout, "%zu\t%s\t%s\n", conreci, contigname.c_str(), ht.c_str());
@@ -229,7 +229,7 @@ void writeContigRecord(std::vector<ARCS::CI> &contigRecord) {
 }
 
 /* writes contigKMap to TSV */
-void writeContigKmerMap(ARCS::ContigKMap &kmap) {
+void writeContigKmerMap(ARKS::ContigKMap &kmap) {
 
 	std::string outputfilename = params.base_name + "_kmercontigrec.tsv";
 
@@ -244,7 +244,7 @@ void writeContigKmerMap(ARCS::ContigKMap &kmap) {
 }
 
 /* write IndexMap to TSV */
-void writeIndexMap(ARCS::IndexMap &imap) {
+void writeIndexMap(ARKS::IndexMap &imap) {
 
 	std::string barcode = "";
 	std::string contigname = "";
@@ -257,7 +257,7 @@ void writeIndexMap(ARCS::IndexMap &imap) {
 
 	for (auto it = imap.begin(); it != imap.end(); ++it) {
 		barcode = it->first;
-		ARCS::ScafMap smap = it->second;
+		ARKS::ScafMap smap = it->second;
 		for (auto j = smap.begin(); j != smap.end(); ++j) {
 			contigname = j->first.first;
 			orientation = HeadOrTail(j->first.second);
@@ -330,7 +330,7 @@ void createIndexMultMap(std::string multfile, std::unordered_map<std::string, in
 }
 
 /* Create contigRecord vector */
-void createContigRecord(std::string contigrectsv, std::vector<ARCS::CI> &contigRecord) {
+void createContigRecord(std::string contigrectsv, std::vector<ARKS::CI> &contigRecord) {
 
 	std::ifstream contigrectsv_stream;
 	contigrectsv_stream.open(contigrectsv.c_str());
@@ -350,7 +350,7 @@ void createContigRecord(std::string contigrectsv, std::vector<ARCS::CI> &contigR
 		contigreci = std::stoi(contigreci_string);
 		ht = HTtoBool(headortail);
 
-		ARCS::CI contigID(contigname, ht);
+		ARKS::CI contigID(contigname, ht);
 
 		contigRecord[contigreci] = contigID;
 	}
@@ -358,7 +358,7 @@ void createContigRecord(std::string contigrectsv, std::vector<ARCS::CI> &contigR
 }
 
 /* Create ContigKmerMap */
-void createContigKmerMap(std::string kmaptsv, ARCS::ContigKMap &kmap) {
+void createContigKmerMap(std::string kmaptsv, ARKS::ContigKMap &kmap) {
 
 	std::ifstream kmaptsv_stream;
 	kmaptsv_stream.open(kmaptsv.c_str());
@@ -383,7 +383,7 @@ void createContigKmerMap(std::string kmaptsv, ARCS::ContigKMap &kmap) {
 }
 
 /* Create IndexMap */
-void createIndexMap(std::string imaptsv, ARCS::IndexMap &imap) {
+void createIndexMap(std::string imaptsv, ARKS::IndexMap &imap) {
 
 	std::ifstream imaptsv_stream;
 	imaptsv_stream.open(imaptsv.c_str());
@@ -404,7 +404,7 @@ void createIndexMap(std::string imaptsv, ARCS::IndexMap &imap) {
 		ht = HTtoBool(ht_string);
 		count = std::stoi(count_string);
 
-		ARCS::CI contigID(contigname, ht);
+		ARKS::CI contigID(contigname, ht);
 
 		imap[barcode][contigID] = count;
 	}
@@ -429,7 +429,7 @@ int memory_usage() {
 	return mem;
 }
 
-/* ARCS PROCESSES FUNCTIONS */
+/* ARKS PROCESSES FUNCTIONS */
 
 /* Returns the size of the array for storing contigs */
 size_t initContigArray(std::string contigfile) {
@@ -465,10 +465,10 @@ size_t initContigArray(std::string contigfile) {
  * 	std::pair<std::string, bool> 				specifies contigID and head/tail
  * 	std::string						the end sequence of the contig
  *	int							k-value specified by user
- *	ARCS::ContigKMap					ContigKMap for storage of kmers
+ *	ARKS::ContigKMap					ContigKMap for storage of kmers
  */
 int mapKmers(std::string seqToKmerize, int k, int k_shift,
-		ARCS::ContigKMap &kmap, ReadsProcessor &proc, int conreci) {
+		ARKS::ContigKMap &kmap, ReadsProcessor &proc, int conreci) {
 
 	int seqsize = seqToKmerize.length();
 
@@ -537,15 +537,15 @@ int mapKmers(std::string seqToKmerize, int k, int k_shift,
  *	std::sparse_hash_map<k-mer, pair<contidID, bool>> 	ContigKMap
  *	int k							k-value (specified by user)
  */
-void getContigKmers(std::string contigfile, ARCS::ContigKMap &kmap,
-	std::vector<ARCS::CI> &contigRecord, ARCS::ContigToLength& contigToLength)
+void getContigKmers(std::string contigfile, ARKS::ContigKMap &kmap,
+	std::vector<ARKS::CI> &contigRecord, ARKS::ContigToLength& contigToLength)
 {
 	int totalNumContigs = 0;
 	int skippedContigs = 0;
 	int validContigs = 0;
 	int totalKmers = 0;
 
-	ARCS::CI collisionmarker("null contig", false);
+	ARKS::CI collisionmarker("null contig", false);
 	size_t conreci = 0; // 0 is the null contig so we will later increment before adding
 	contigRecord[conreci] = collisionmarker;
 
@@ -612,8 +612,8 @@ void getContigKmers(std::string contigfile, ARCS::ContigKMap &kmap,
 					cutOff = sequence_length / 2;
 
 				// Arbitrarily assign head or tail to ends of the contig
-				ARCS::CI headside(contigID, true);
-				ARCS::CI tailside(contigID, false);
+				ARKS::CI headside(contigID, true);
+				ARKS::CI tailside(contigID, false);
 
 				//get ends of the sequence and put k-mers into the map
 				contigRecord[tempConreci1] = headside;
@@ -683,14 +683,14 @@ static inline double calcJacIndex(int smallCount, int overallCount) {
 }
 
 /* Returns best corresponding contig from read through kmers
- * 	ARCS::ContigKMap			tells me what kmers correspond to which contig
+ * 	ARKS::ContigKMap			tells me what kmers correspond to which contig
  *	std::string				read sequence
  *	int					size of k-mer
  *	int 					k_shift
  *      double j_index				Jaccard Index (default 0.5)
  *	ReadsProcessor				kmerizer
  */
-int bestContig (ARCS::ContigKMap &kmap, std::string readseq, int k, int k_shift,
+int bestContig (ARKS::ContigKMap &kmap, std::string readseq, int k, int k_shift,
 		double j_index, ReadsProcessor &proc) {
 
 	// to keep track of what contig+H/T that the k-mer from barcode matches to
@@ -783,9 +783,9 @@ static inline void stripReadNum(std::string& readName)
 }
 
 /* Read through longranger basic chromium output fastq file */
-void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexMap& imap,
+void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexMap& imap,
 			const std::unordered_map<std::string, int> &indexMultMap,
-			const std::vector<ARCS::CI> &contigRecord) {
+			const std::vector<ARKS::CI> &contigRecord) {
 
 	int stored_readpairs = 0;
 	int skipped_unpaired = 0;
@@ -825,6 +825,8 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 		std::string cread2 = "";
 		std::string comment1 = "";
 		std::string comment2 = "";
+        std::size_t foundTag;
+        std::size_t foundEnd;
 		bool paired = false;
 		int corrConReci1 = 0;
 		int corrConReci2 = 0;
@@ -868,9 +870,20 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 
 		if (!stop) {
 			barcode1.clear();
-            int comment1Len = comment1.length() - 1;
-            if(comment1Len > 5)
-                barcode1 = comment1.substr(5, comment1Len);
+            //Find position of BX:Z:
+            foundTag = comment1.find("BX:Z:");
+            if(foundTag != std::string::npos){
+                // End is space if there is another tag, newline otherwise
+                foundEnd = comment1.find(' ', foundTag);
+                // Get substring from end of BX:Z: to space or end of string
+                if(foundEnd != std::string::npos){
+                    barcode1 = comment1.substr(foundTag + 5, foundEnd - foundTag - 5);
+                }
+                else {
+                    barcode1 = comment1.substr(foundTag + 5);
+                }
+            }
+
 			// for (std::string::iterator i = comment1.begin(); i != comment1.end();
 			// 		i++) {
 			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
@@ -878,10 +891,22 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 			// 		barcode1 += *i;
 			// 	}
 			// }
+
 			barcode2.clear();
-            int comment2Len = comment2.length() - 1;
-            if(comment2Len > 5)
-                barcode2 = comment2.substr(5, comment2Len);
+            //Find position of BX:Z:
+            foundTag = comment2.find("BX:Z:");
+            if(foundTag != std::string::npos){
+                // End is space if there is another tag, newline otherwise
+                foundEnd = comment2.find(' ', foundTag);
+                // Get substring from end of BX:Z: to space or end of string
+                if(foundEnd != std::string::npos){
+                    barcode2 = comment2.substr(foundTag + 5, foundEnd - foundTag - 5);
+                }
+                else {
+                    barcode2 = comment2.substr(foundTag + 5);
+                }
+            }
+
 			// for (std::string::iterator i = comment2.begin(); i != comment2.end();
 			// 		i++) {
 			// 	if (*i != 'B' && *i != 'X' && *i != ':' && *i != 'Z'
@@ -910,7 +935,7 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 				// we only store barcode info in index map if read pairs have same contig + orientation
 				// and if the corrContigId is not NULL (because it is above accuracy threshold)
 				if (corrConReci1 != 0 && corrConReci1 == corrConReci2) {
-					const ARCS::CI corrContigId = contigRecord[corrConReci1];
+					const ARKS::CI corrContigId = contigRecord[corrConReci1];
 #pragma omp critical(imap)
 					{
 						imap[barcode1][corrContigId]++;
@@ -950,10 +975,10 @@ void chromiumRead(std::string chromiumfile, ARCS::ContigKMap& kmap, ARCS::IndexM
 }
 
 
-void readChroms(vector<string> inputFiles, ARCS::ContigKMap &kmap,
-		ARCS::IndexMap &imap,
+void readChroms(vector<string> inputFiles, ARKS::ContigKMap &kmap,
+		ARKS::IndexMap &imap,
 		const std::unordered_map<std::string, int> &indexMultMap,
-		const std::vector<ARCS::CI> &contigRecord) {
+		const std::vector<ARKS::CI> &contigRecord) {
 
 	std::string chromFile;
 
@@ -1013,7 +1038,7 @@ static inline std::pair<bool, bool> headOrTail(int head, int tail) {
  * is a map with a key of pairs of saffold names, and value
  * of number of links between the pair. (Each link is one index).
  */
-void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
+void pairContigs(ARKS::IndexMap& imap, ARKS::PairMap& pmap,
 		std::unordered_map<std::string, int>& indexMultMap) {
 
 	/* for each Chromium barcode */
@@ -1029,7 +1054,7 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 		 * prevents counting the same contig pair multiple times
 		 * for the same barcode
 		 */
-		std::unordered_set<ARCS::ContigPair, PairHash> visitedPairs;
+		std::unordered_set<ARKS::ContigPair, PairHash> visitedPairs;
 
 		/* Iterate through all the scafNames in ScafMap */
 		for (auto o = it->second.begin(); o != it->second.end(); ++o) {
@@ -1055,7 +1080,7 @@ void pairContigs(ARCS::IndexMap& imap, ARCS::PairMap& pmap,
 				 * This can happen if a barcode maps to both
 				 * the head and tail regions of a contig.
 				 */
-				ARCS::ContigPair pair(scafA, scafB);
+				ARKS::ContigPair pair(scafA, scafB);
 				if (visitedPairs.find(pair) != visitedPairs.end())
 					continue;
 				visitedPairs.insert(pair);
@@ -1140,11 +1165,11 @@ static inline bool checkSignificance(int max, int second) {
  * between the scafNames.
  * VidVdes is a mapping of vertex descriptors to scafNames (vertex id).
  */
-void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
+void createGraph(const ARKS::PairMap& pmap, ARKS::Graph& g)
 {
-	ARCS::VidVdesMap vmap;
+	ARKS::VidVdesMap vmap;
 
-	ARCS::PairMap::const_iterator it;
+	ARKS::PairMap::const_iterator it;
 	for (it = pmap.begin(); it != pmap.end(); ++it) {
 		std::string scaf1, scaf2;
 		std::tie(scaf1, scaf2) = it->first;
@@ -1164,19 +1189,19 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 
 			/* If scaf1 is not a node in the graph, add it */
 			if (vmap.count(scaf1) == 0) {
-				ARCS::Graph::vertex_descriptor v = boost::add_vertex(g);
+				ARKS::Graph::vertex_descriptor v = boost::add_vertex(g);
 				g[v].id = scaf1;
 				vmap[scaf1] = v;
 			}
 
 			/* If scaf2 is not a node in the graph, add it */
 			if (vmap.count(scaf2) == 0) {
-				ARCS::Graph::vertex_descriptor v = boost::add_vertex(g);
+				ARKS::Graph::vertex_descriptor v = boost::add_vertex(g);
 				g[v].id = scaf2;
 				vmap[scaf2] = v;
 			}
 
-			ARCS::Graph::edge_descriptor e;
+			ARKS::Graph::edge_descriptor e;
 			bool inserted;
 
 			/* Add the edge representing the pair */
@@ -1193,13 +1218,13 @@ void createGraph(const ARCS::PairMap& pmap, ARCS::Graph& g)
 /*
  * Write out the boost graph in a .dot file.
  */
-void writeGraph(const std::string& graphFile_dot, ARCS::Graph& g)
+void writeGraph(const std::string& graphFile_dot, ARKS::Graph& g)
 {
 	std::ofstream out(graphFile_dot.c_str());
 	assert(out);
 
-	ARCS::VertexPropertyWriter<ARCS::Graph> vpWriter(g);
-	ARCS::EdgePropertyWriter<ARCS::Graph> epWriter(g);
+	ARKS::VertexPropertyWriter<ARKS::Graph> vpWriter(g);
+	ARKS::EdgePropertyWriter<ARKS::Graph> epWriter(g);
 
 	boost::write_graphviz(out, g, vpWriter, epWriter);
 	assert(out);
@@ -1210,12 +1235,12 @@ void writeGraph(const std::string& graphFile_dot, ARCS::Graph& g)
  * Remove all nodes from graph wich have a degree
  * greater than max_degree
  */
-void removeDegreeNodes(ARCS::Graph& g, int max_degree) {
+void removeDegreeNodes(ARKS::Graph& g, int max_degree) {
 
-	boost::graph_traits<ARCS::Graph>::vertex_iterator vi, vi_end, next;
+	boost::graph_traits<ARKS::Graph>::vertex_iterator vi, vi_end, next;
 	boost::tie(vi, vi_end) = boost::vertices(g);
 
-	std::vector<ARCS::VertexDes> dVertex;
+	std::vector<ARKS::VertexDes> dVertex;
 	for (next = vi; vi != vi_end; vi = next) {
 		++next;
 		if (static_cast<int>(boost::degree(*vi, g)) > max_degree) {
@@ -1234,7 +1259,7 @@ void removeDegreeNodes(ARCS::Graph& g, int max_degree) {
  * Remove nodes that have a degree greater than max_degree
  * Write graph
  */
-void writePostRemovalGraph(ARCS::Graph& g, const std::string graphFile) {
+void writePostRemovalGraph(ARKS::Graph& g, const std::string graphFile) {
 	if (params.max_degree != 0) {
 		std::cout << "      Deleting nodes with degree > " << params.max_degree
 				<< "... \n";
@@ -1249,10 +1274,10 @@ void writePostRemovalGraph(ARCS::Graph& g, const std::string graphFile) {
 }
 
 static inline void calcDistanceEstimates(
-	const ARCS::IndexMap& imap,
+	const ARKS::IndexMap& imap,
 	const std::unordered_map<std::string, int> &indexMultMap,
-	const ARCS::ContigToLength& contigToLength,
-	ARCS::Graph& g)
+	const ARKS::ContigToLength& contigToLength,
+	ARKS::Graph& g)
 {
     std::time_t rawtime;
 
@@ -1318,15 +1343,15 @@ void runArks(vector<string> inputFiles) {
 
     std::string graphFile = params.base_name + "_original.gv";
 
-    ARCS::ContigKMap kmap;
+    ARKS::ContigKMap kmap;
     kmap.set_deleted_key("");
 
-    ARCS::IndexMap imap;
-    ARCS::PairMap pmap;
-    ARCS::Graph g;
+    ARKS::IndexMap imap;
+    ARKS::PairMap pmap;
+    ARKS::Graph g;
     std::unordered_map<std::string, int> indexMultMap;
 
-    ARCS::ContigToLength contigToLength;
+    ARKS::ContigToLength contigToLength;
 
     std::time_t rawtime;
 
@@ -1339,7 +1364,7 @@ void runArks(vector<string> inputFiles) {
     time(&rawtime);
     std::cout << "\n=>Preprocessing: Gathering draft information..." << ctime(&rawtime) << "\n";
     size_t size = initContigArray(params.file);
-    std::vector<ARCS::CI> contigRecord(size);
+    std::vector<ARKS::CI> contigRecord(size);
 
     if (full) {
 

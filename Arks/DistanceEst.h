@@ -71,17 +71,17 @@ enum PairOrientation { HH=0, HT, TH, TT, NUM_ORIENTATIONS };
 typedef std::array<BarcodeStats, NUM_ORIENTATIONS> BarcodeStatsArray;
 
 /** barcode stats each possible orientation of a contig pair */
-typedef std::map<ARCS::ContigPair, BarcodeStatsArray> PairToBarcodeStats;
+typedef std::map<ARKS::ContigPair, BarcodeStatsArray> PairToBarcodeStats;
 typedef typename PairToBarcodeStats::iterator PairToBarcodeStatsIt;
 
 /**
  * Measure distance between contig ends vs.
  * barcode intersection size and barcode union size.
  */
-void calcDistSamples(const ARCS::IndexMap& imap,
-	const ARCS::ContigToLength& contigToLength,
+void calcDistSamples(const ARKS::IndexMap& imap,
+	const ARKS::ContigToLength& contigToLength,
 	const std::unordered_map<std::string, int>& indexMultMap,
-	const ARCS::ArcsParams& params,
+	const ARKS::ArksParams& params,
 	DistSampleMap& distSamples)
 {
 	/* for each chromium barcode */
@@ -95,7 +95,7 @@ void calcDistSamples(const ARCS::IndexMap& imap,
 			continue;
 
 		/* contig head/tail => number of mapped read pairs */
-		const ARCS::ScafMap& contigToCount = barcodeIt->second;
+		const ARKS::ScafMap& contigToCount = barcodeIt->second;
 
 		for (auto contigIt = contigToCount.begin();
 			contigIt != contigToCount.end(); ++contigIt)
@@ -139,8 +139,8 @@ void calcDistSamples(const ARCS::IndexMap& imap,
 			 * ends of a contig.
 			 */
 
-			ARCS::CI otherEnd(contigID, !isHead);
-			ARCS::ScafMapConstIt otherIt = contigToCount.find(otherEnd);
+			ARKS::CI otherEnd(contigID, !isHead);
+			ARKS::ScafMapConstIt otherIt = contigToCount.find(otherEnd);
 			bool foundOther = otherIt != contigToCount.end()
 				&& otherIt->second >= params.min_reads;
 
@@ -182,7 +182,7 @@ static inline void buildJaccardToDist(
  * mapping in our calculations.
  */
 static inline bool validBarcodeMapping(unsigned contigLength,
-	int pairs, const ARCS::ArcsParams& params)
+	int pairs, const ARKS::ArksParams& params)
 {
 	/*
 	 * skip contigs with less than required number of
@@ -206,13 +206,13 @@ static inline bool validBarcodeMapping(unsigned contigLength,
 
 /** calculate shared barcode stats for candidate contig pairs */
 static inline void buildPairToBarcodeStats(
-	const ARCS::IndexMap& imap,
+	const ARKS::IndexMap& imap,
 	const std::unordered_map<std::string, int>& indexMultMap,
-	const ARCS::ContigToLength& contigToLength,
-	const ARCS::ArcsParams& params,
+	const ARKS::ContigToLength& contigToLength,
+	const ARKS::ArksParams& params,
 	PairToBarcodeStats& pairToStats)
 {
-	typedef std::unordered_map<ARCS::CI, size_t, PairHash> ContigEndToBarcodeCount;
+	typedef std::unordered_map<ARKS::CI, size_t, PairHash> ContigEndToBarcodeCount;
 	typedef typename ContigEndToBarcodeCount::const_iterator BarcodeCountConstIt;
 	ContigEndToBarcodeCount contigEndToBarcodeCount;
 
@@ -228,7 +228,7 @@ static inline void buildPairToBarcodeStats(
 			continue;
 
 		/* contig head/tail => number of mapped read pairs */
-		const ARCS::ScafMap& contigEndToPairCount = barcodeIt->second;
+		const ARKS::ScafMap& contigEndToPairCount = barcodeIt->second;
 
 		for (auto endIt1 = contigEndToPairCount.begin();
 			endIt1 != contigEndToPairCount.end(); ++endIt1)
@@ -266,7 +266,7 @@ static inline void buildPairToBarcodeStats(
 					continue;
 
 				/* initialize barcode/weight data for contig end pair */
-				ARCS::ContigPair pair(id1, id2);
+				ARKS::ContigPair pair(id1, id2);
 				if (pairToStats.count(pair) == 0)
 					pairToStats[pair].fill(BarcodeStats());
 
@@ -306,8 +306,8 @@ static inline void buildPairToBarcodeStats(
 			const std::string& id1 = it->first.first;
 			const std::string& id2 = it->first.second;
 
-			ARCS::CI tail1(id1, i == HH || i == HT);
-			ARCS::CI tail2(id2, i == HH || i == TH);
+			ARKS::CI tail1(id1, i == HH || i == HT);
+			ARKS::CI tail2(id2, i == HH || i == TH);
 
 			BarcodeCountConstIt countIt1 = contigEndToBarcodeCount.find(tail1);
 			if (countIt1 == contigEndToBarcodeCount.end())
@@ -331,7 +331,7 @@ static inline void buildPairToBarcodeStats(
 /** estimate min/max distance between a pair of contigs */
 std::pair<DistanceEstimate, bool> estimateDistance(
 	const BarcodeStats& stats, const JaccardToDist& jaccardToDist,
-	const ARCS::ArcsParams& params)
+	const ARKS::ArksParams& params)
 {
 	DistanceEstimate result;
 
@@ -393,7 +393,7 @@ std::pair<DistanceEstimate, bool> estimateDistance(
 static inline void addEdgeDistances(
 	const PairToBarcodeStats& pairToStats,
 	const JaccardToDist& jaccardToDist,
-	const ARCS::ArcsParams& params, ARCS::Graph& g)
+	const ARKS::ArksParams& params, ARKS::Graph& g)
 {
 	if (jaccardToDist.empty())
 		return;
@@ -431,7 +431,7 @@ static inline void addEdgeDistances(
 
 /** dump distance estimates and barcode data to TSV */
 static inline void writeDistTSV(const std::string& path,
-	const PairToBarcodeStats& pairToStats, const ARCS::Graph& g)
+	const PairToBarcodeStats& pairToStats, const ARKS::Graph& g)
 {
 	if (path.empty())
 		return;
