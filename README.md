@@ -34,6 +34,10 @@ If your boost library headers are not in your PATH you can specify their locatio
 
 ### ARKS+LINKS Pipeline 
 
+ARKS requires two input files:
+* Draft assembly fasta file
+* Interleaved linked reads file (Barcode sequence expected in the BX tag of the read header; Run [Long Ranger basic](https://support.10xgenomics.com/genome-exome/software/pipelines/latest/what-is-long-ranger) on raw chromium reads to produce this interleaved file)
+
 The Makefile located here: Examples/arks-make will run the full ARKS pipeline, including the 3 steps below. It will also optionally run the misassembly corrector [Tigmint](https://github.com/bcgsc/tigmint) prior to scaffolding with ARKS.
 
 There are three steps to the pipeline:
