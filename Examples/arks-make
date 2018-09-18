@@ -37,6 +37,15 @@ l=5
 a=0.3
 bin=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
+# Record run time and memory usage in a file using GNU time.
+ifdef time
+ifneq ($(shell command -v gtime),)
+gtime=command gtime -v -o $@.time
+else
+gtime=command time -v -o $@.time
+endif
+endif
+
 .PHONY: all version help tigmint arks arks-tigmint
 .DELETE_ON_ERROR:
 .PRECIOUS: %_c$c_m$m_k$k_r$r_e$e_z$z.tigpair_checkpoint.tsv %_c$c_m$m_k$k_r$r_e$e_z$z_original.gv 
@@ -57,6 +66,7 @@ help:
 	@echo ""
 	@echo "	draft           draft name [draft]. File must have .fasta or .fa extension"
 	@echo "	reads           read name [reads]. File must have .fastq.gz or .fq.gz extension"
+	@echo "	time		logs time and memory usage to file for main steps (Set to 1 to enable logging)"
 	@echo ""
 	@echo "    Tigmint Options:"
 	@echo ""
@@ -123,7 +133,7 @@ tigmint: $(draft).tigmint.fa
 
 # Run tigmint
 $(draft).tigmint.fa: $(draft).fa $(reads).fq.gz
-	/usr/bin/time -v tigmint tigmint draft=$(draft) reads=$(reads) minsize=$(minsize) as=$(as) nm=$(nm) dist=$(dist) mapq=$(mapq) trim=$(trim) span=$(span) window=$(window) t=$t |& tee $(draft)_tigmint.log
+	$(gtime) tigmint tigmint draft=$(draft) reads=$(reads) minsize=$(minsize) as=$(as) nm=$(nm) dist=$(dist) mapq=$(mapq) trim=$(trim) span=$(span) window=$(window) t=$t 
 
 #Run ARKS
 arks: $(draft)_c$c_m$m_k$k_r$r_e$e_z$z_l$l_a$a.scaffolds.fa
@@ -144,9 +154,9 @@ $(reads)_multiplicities.csv: $(reads).fof
 # Run ARKS Program
 %_c$c_m$m_k$k_r$r_e$e_z$z_original.gv: %.renamed.fa $(reads)_multiplicities.csv $(reads).fq.gz
 ifneq ($D, true)
-	/usr/bin/time -v arks -p full -v -f $< -a $(word 2,$^) -c $c -t $(threads) -j $j -o $o -m $m -k $k -r $r -e $e -z $z -d $d -b $(patsubst %_original.gv,%,$@) $(word 3,$^) |& tee $(patsubst %_original.gv,%,$@)_arks.log
+	$(gtime) arks -p full -v -f $< -a $(word 2,$^) -c $c -t $(threads) -j $j -o $o -m $m -k $k -r $r -e $e -z $z -d $d -b $(patsubst %_original.gv,%,$@) $(word 3,$^) 
 else
-	/usr/bin/time -v arks -p full -D -B $B -v -f $< -a $(word 2,$^) -c $c -t $(threads) -j $j -o $o -m $m -k $k -r $r -e $e -z $z -d $d -b $(patsubst %_original.gv,%,$@) $(word 3,$^) |& tee $(patsubst %_original.gv,%,$@)_arks.log
+	$(gtime) arks -p full -D -B $B -v -f $< -a $(word 2,$^) -c $c -t $(threads) -j $j -o $o -m $m -k $k -r $r -e $e -z $z -d $d -b $(patsubst %_original.gv,%,$@) $(word 3,$^) 
 endif
 
 # Generate TSV from ARKS
@@ -163,4 +173,4 @@ empty.fof:
 
 # Run LINKS
 %_c$c_m$m_k$k_r$r_e$e_z$z_l$l_a$a.scaffolds.fa: %.renamed.fa empty.fof %_c$c_m$m_k$k_r$r_e$e_z$z_l$l_a$a.tigpair_checkpoint.tsv
-	/usr/bin/time -v LINKS -f $< -s empty.fof -b $(patsubst %.scaffolds.fa,%,$@) -l $l -a $a -z $z |& tee $(patsubst %.scaffolds.fa,%,$@)_links.log
+	$(gtime) LINKS -f $< -s empty.fof -b $(patsubst %.scaffolds.fa,%,$@) -l $l -a $a -z $z 
