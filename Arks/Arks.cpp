@@ -792,6 +792,7 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
 	int skipped_invalidreadpair = 0;
 	int skipped_nogoodcontig = 0;
 	int invalidbarcode = 0;
+	int emptybarcode=0; 
 
 	size_t count = 0;
 	bool stop = false;
@@ -825,8 +826,8 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
 		std::string cread2 = "";
 		std::string comment1 = "";
 		std::string comment2 = "";
-        std::size_t foundTag;
-        std::size_t foundEnd;
+	        std::size_t foundTag;
+	        std::size_t foundEnd;
 		bool paired = false;
 		int corrConReci1 = 0;
 		int corrConReci2 = 0;
@@ -870,40 +871,43 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
 
 		if (!stop) {
 			barcode1.clear();
-            //Find position of BX:Z:
-            foundTag = comment1.find("BX:Z:");
-            if(foundTag != std::string::npos){
-                // End is space if there is another tag, newline otherwise
-                foundEnd = comment1.find(' ', foundTag);
-                // Get substring from end of BX:Z: to space or end of string
-                if(foundEnd != std::string::npos){
-                    barcode1 = comment1.substr(foundTag + 5, foundEnd - foundTag - 5);
-                }
-                else {
-                    barcode1 = comment1.substr(foundTag + 5);
-                }
-            }
-
+	    		//Find position of BX:Z:
+			foundTag = comment1.find("BX:Z:");
+	    		if(foundTag != std::string::npos){
+				// End is space if there is another tag, newline otherwise
+		                foundEnd = comment1.find(' ', foundTag);
+				// Get substring from end of BX:Z: to space or end of string
+                		if(foundEnd != std::string::npos){
+		    			barcode1 = comment1.substr(foundTag + 5, foundEnd - foundTag - 5);
+				}
+				else {
+		    			barcode1 = comment1.substr(foundTag + 5);
+				}
+	    		}
+			
 			barcode2.clear();
-            //Find position of BX:Z:
-            foundTag = comment2.find("BX:Z:");
-            if(foundTag != std::string::npos){
-                // End is space if there is another tag, newline otherwise
-                foundEnd = comment2.find(' ', foundTag);
-                // Get substring from end of BX:Z: to space or end of string
-                if(foundEnd != std::string::npos){
-                    barcode2 = comment2.substr(foundTag + 5, foundEnd - foundTag - 5);
-                }
-                else {
-                    barcode2 = comment2.substr(foundTag + 5);
-                }
-            }
+	    		//Find position of BX:Z:
+			foundTag = comment2.find("BX:Z:");
+	    		if(foundTag != std::string::npos){
+				// End is space if there is another tag, newline otherwise
+				foundEnd = comment2.find(' ', foundTag);
+				// Get substring from end of BX:Z: to space or end of string
+		                if(foundEnd != std::string::npos){
+		    			barcode2 = comment2.substr(foundTag + 5, foundEnd - foundTag - 5);
+				}else {
+		    			barcode2 = comment2.substr(foundTag + 5);
+				}
+	    		}
 
-			bool validbarcode = indexMultMap.find(barcode1) != indexMultMap.end();
-
-			if (!validbarcode) {
+			bool validbarcode = false; 
+			if (barcode1.empty() || barcode2.empty()) {
+				emptybarcode++; 
+			} else {				
+				validbarcode = indexMultMap.find(barcode1) != indexMultMap.end();				
+				if (!validbarcode) {
 #pragma omp atomic
-				invalidbarcode++;
+					invalidbarcode++;
+				}
 			}
 
 			if (paired && validbarcode && !barcode1.empty() && !barcode2.empty() && (barcode1==barcode2)) {
@@ -952,6 +956,8 @@ void chromiumRead(std::string chromiumfile, ARKS::ContigKMap& kmap, ARKS::IndexM
 				"Total valid kmers: %u\nNumber invalid kmers: %u\nNumber of kmers found in ContigKmap: %u\nNumber of kmers recorded in Ktrack: %u\nNumber of kmers found in ContigKmap but duplicate: %u\nNumber of reads passing jaccard threshold: %u\nNumber of reads failing jaccard threshold: %u\n",
 				s_totalnumckmers, s_numbadckmers, s_numckmersfound, s_numckmersrec,
 				s_ckmersasdups, s_numreadspassingjaccard, s_numreadsfailjaccard);
+		if (emptybarcode>0) 
+			printf("WARNING:: Your chromium read file has %d readpairs that have an empty barcode.", emptybarcode); 
 		if (invalidbarcode > 0)
 			printf("WARNING:: Your chromium read file has %d read pairs that have barcodes not in the barcode multiplicity file.", invalidbarcode);
 
