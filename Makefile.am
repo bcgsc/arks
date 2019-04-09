@@ -8,4 +8,5 @@ SUBDIRS = \
 dist_doc_DATA = \
 	README.md
 
-EXTRA_DIST = autogen.sh
+EXTRA_DIST = autogen.sh \
+	Examples

@@ -14,7 +14,15 @@ alignments with `bwa mem`.
 * Autotools (if cloning directly from repository) 
 * LINKS (tested on 1.8)
 
-### Compilation:
+
+
+### Installation:
+## Install ARKS using Brew
+```
+brew install brewsci/bio/arks
+```
+
+## Install ARKS from the source code
 If cloning directly from the repository run:
 ```
 ./autogen.sh

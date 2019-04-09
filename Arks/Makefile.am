@@ -12,4 +12,8 @@ arks_LDADD = $(top_builddir)/DataLayer/libdatalayer.a \
 
 arks_LDFLAGS = $(OPENMP_CXXFLAGS)
 
-arks_SOURCES = Arks.h Arks.cpp
+arks_SOURCES = \
+	Arks.h \
+	Arks.cpp \
+	DistanceEst.h \
+	kseq.h	

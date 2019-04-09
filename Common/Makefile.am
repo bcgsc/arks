@@ -10,11 +10,14 @@ libcommon_a_SOURCES = \
 	Fcontrol.cpp Fcontrol.h \
 	gzstream.C gzstream.h \
 	IOUtil.h \
+	MapUtil.h \
 	Options.cpp Options.h \
+	PairHash.h \
 	ReadsProcessor.cpp ReadsProcessor.h \
 	Sequence.cpp Sequence.h \
 	SeqEval.h \
 	SignalHandler.cpp SignalHandler.h \
+	StatUtil.h \
 	StringUtil.h \
 	Uncompress.cpp Uncompress.h
 	
