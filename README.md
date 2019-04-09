@@ -17,12 +17,12 @@ alignments with `bwa mem`.
 
 
 ### Installation:
-## Install ARKS using Brew
+#### Install ARKS using Brew
 ```
 brew install brewsci/bio/arks
 ```
 
-## Install ARKS from the source code
+#### Install ARKS from the source code
 If cloning directly from the repository run:
 ```
 ./autogen.sh
