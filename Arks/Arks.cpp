@@ -1550,9 +1550,14 @@ int main(int argc, char** argv) {
 	//gather all the chromium files
 	vector<string> inputFiles = convertInputString(rawInputFiles);
 
-	while (optind < argc) {
-		inputFiles.push_back(argv[optind]);
-		optind++;
+	if (optind == argc) {
+		std::cerr << "No Chromium read files are specified. Exiting... \n"; 
+		die=true;
+	} else {
+		while (optind < argc) {
+			inputFiles.push_back(argv[optind]);
+			optind++;
+		}
 	}
 
 	std::ifstream g(params.file.c_str());
