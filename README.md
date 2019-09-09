@@ -1,5 +1,16 @@
 ![Logo](https://github.com/bcgsc/arks/blob/master/arks-logo.png)
 
+# Important Note
+ARKS has been integrated into ARCS as of version 1.1.0: https://github.com/bcgsc/arcs
+
+### To run ARCS in ARKS mode:
+```arcs --arks [options] <linked reads fastq>```
+
+### The full ARKS pipeline can be run with the supplied Makefile:
+```Examples/arcs-make arks draft=myassembly reads=myreads```
+
+Future code maintenance for ARKS will be done in the ARCS repository ONLY.
+
 # ARKS
 
 Scaffolding genome sequence assemblies using 10X Genomics GemCode/Chromium data.
