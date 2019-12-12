@@ -1,4 +1,4 @@
-! The ARCS/ARKS projects have now been consolidated
+! The ARCS/ARKS projects have now been consolidated. 
 The ARKS functionality is available from: [![link](https://img.shields.io/badge/ARCS-github-red)](https://github.com/bcgsc/arcs)
 
 ![Logo](https://github.com/bcgsc/arks/blob/master/arks-logo.png)
@@ -107,7 +107,6 @@ Gigascience. 2015 Aug 4;4:35. doi: 10.1186/s13742-015-0076-3. eCollection 2015.
 [![link](https://img.shields.io/badge/LINKS-manuscript-brightgreen)](https://gigascience.biomedcentral.com/articles/10.1186/s13742-015-0076-3)
 [![link](https://img.shields.io/badge/LINKS-github-yellow)](https://github.com/warrenlr/LINKS)
 
-http://www.bcgsc.ca/platform/bioinfo/software/links
 
 ### License  
 
