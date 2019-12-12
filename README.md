@@ -1,7 +1,11 @@
+! The ARCS/ARKS projects have now been consolidated
+The ARKS functionality is available from: [![link](https://img.shields.io/badge/ARCS-github-red)](https://github.com/bcgsc/arcs)
+
 ![Logo](https://github.com/bcgsc/arks/blob/master/arks-logo.png)
 
 # Important Note
-ARKS has been integrated into ARCS as of version 1.1.0: https://github.com/bcgsc/arcs
+ARKS has been integrated into [![link](https://img.shields.io/badge/ARCS-github-red)](https://github.com/bcgsc/arcs) as of version 1.1.0
+
 
 ### To run ARCS in ARKS mode:
 ```arcs --arks [options] <linked reads fastq>```
@@ -75,13 +79,35 @@ and compare your output to the files provided at: Examples/arks_test-demo/output
 
 ### Citing ARKS
 
-Paper :
-https://doi.org/10.1186/s12859-018-2243-x
+<pre>
+ARKS: chromosome-scale scaffolding of human genome drafts with linked read kmers.
+Coombe L, Zhang J, Vandervalk BP, Chu J, Jackman SD, Birol I, Warren RL.
+BMC Bioinformatics. 2018 Jun 20;19(1):234. doi: 10.1186/s12859-018-2243-x.
+</pre>
+[![link](https://img.shields.io/badge/ARKS-manuscript-brightgreen)](https://doi.org/10.1186/s12859-018-2243-x)
 
-LINKS :
+### Citing ARCS
+
+<pre>
+ARCS: scaffolding genome drafts with linked reads.
+Yeo S, Coombe L, Warren RL, Chu J, Birol I.
+Bioinformatics. 2018 Mar 1;34(5):725-731. doi: 10.1093/bioinformatics/btx675.
+</pre>
+[![link](https://img.shields.io/badge/ARCS-manuscript-brightgreen)](https://doi.org/10.1101/100750)
+
+**NOTE: The supplementary data and scripts have been moved to http://www.bcgsc.ca/downloads/supplementary/ARCS/**
+
+### Citing LINKS :
+
+<pre>
+LINKS: Scalable, alignment-free scaffolding of draft genomes with long reads.
+Warren RL, Yang C, Vandervalk BP, Behsaz B, Lagman A, Jones SJ, Birol I.
+Gigascience. 2015 Aug 4;4:35. doi: 10.1186/s13742-015-0076-3. eCollection 2015.
+</pre>
+[![link](https://img.shields.io/badge/LINKS-manuscript-brightgreen)](https://gigascience.biomedcentral.com/articles/10.1186/s13742-015-0076-3)
+[![link](https://img.shields.io/badge/LINKS-github-yellow)](https://github.com/warrenlr/LINKS)
+
 http://www.bcgsc.ca/platform/bioinfo/software/links
-https://github.com/warrenlr/LINKS
-
 
 ### License  
 
